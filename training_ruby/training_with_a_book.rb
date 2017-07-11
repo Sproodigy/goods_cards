@@ -22,6 +22,16 @@ class Sequence
       @from, @to, @by = from, to, by
     end
 
+    module Sequences
+      def self.fromtoby(from, to, by)
+        x = from
+        while x <= to
+          yield x
+          x += by
+        end
+      end
+    end
+
     def each
       x = @from
       while x <= @to
@@ -44,6 +54,7 @@ class Sequence
         nil
       end
     end
+
     def *(factor)
       Sequence.new(@from*factor, @to*factor, @by*factor)
     end
@@ -52,9 +63,37 @@ class Sequence
       Sequence.new(@from+offset, @to+offset, @by)
     end
 
-    s = Sequence.new(1, 10, 2)
-    s.each { |x| p x }
-    print s[s.length-1]
-    t = (s+1)*2
-    p t
+    # Sequences.fromtoby(1, 20, 2) { |x| p x}
+
+
+
+
+
+
+    # s = Sequence.new(1, 10, 2)
+    # s.each { |x| p x }
+    # print s[s.length-1]
+    # t = (s+1)*2
+    # p t
+end
+
+class Range
+  def by(step)
+    x = self.begin
+    if exclude_end?
+      while x < self.end
+        yield x
+        x += step
+      end
+    else
+      while x <=self.end
+        yield x
+        x += step
+      end
+    end
+  end
+
+    (0..40).by(10) do |d|
+      p d
+  end
 end
