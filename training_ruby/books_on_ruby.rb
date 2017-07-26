@@ -18,17 +18,19 @@ require 'active_support/all'
 #   end
 # end
 
-def name
-  while true
-    print 'Name: '
-    name = gets.chomp
-    names = []
-    array = names.insert("#{name}")
-    puts array
-  end
-end
+# def name
+#   while true
+#     print 'Name: '
+#     name = gets.chomp
+#     names = []
+#     count = names << name
+#     array = Array.new(count.count)
+#     puts array
+#   end
 
-name
+# end
+
+# name
 
 class Sequence
   include Enumerable
@@ -78,19 +80,51 @@ class Sequence
       Sequence.new(@from+offset, @to+offset, @by)
     end
 
-    # Sequences.fromtoby(1, 20, 2) { |x| p x}
-
-
-
-
-
-
     # s = Sequence.new(1, 10, 2)
     # s.each { |x| p x }
     # print s[s.length-1]
     # t = (s+1)*2
     # p t
+
+    # Sequences.fromtoby(1, 20, 2) { |x| p x}
 end
+
+
+class Dragon
+
+  def initialize(name)
+    @@name = name
+    puts @@name + ' родился.'
+  end
+
+  # def count
+  #
+  #   while @@name = gets.chomp
+  #     if @@name == 'q'
+  #       break
+  #     else
+  #       puts @@name + ' родился.'
+  #     end
+  #     puts @@name
+  #   end
+  # end
+
+  Dragon.new('Flippy')
+  Dragon.new('Jimmy')
+end
+
+# p = Array.new( ( print "Введите размерность массива: " ; gets.to_i ) ){ |i|
+#   print "Введите #{i}-й элемент массива: " ; gets.to_f }
+# puts p
+
+
+
+    #
+    # Dragon.new('Jilly')
+    # Dragon.new('Wally')
+    # Dragon.new('Flippy')
+    # Dragon.count
+
 
 class Range
   def by(step)
@@ -147,27 +181,6 @@ end
 # puts die.showing
 # puts die.showing
 
-# class Dragon
-#
-#   def initialize(name)
-#     @@name = name
-#     puts name + ' родился.'
-#   end
-#
-#   def count
-#     count = []
-#     new_dragon = Dragon.new(@@name)
-#     if new_dragon == true
-#       count << @@name
-#       puts count
-#     end
-#   end
-# end
-#
-# Dragon.new('Jilly')
-# Dragon.new('Wally')
-# Dragon.new('Flippy')
-# Dragon.count
 
 #
 # class Polygon
