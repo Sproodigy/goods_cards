@@ -7,7 +7,7 @@ require 'simple-spreadsheet'
 # require 'csv'
 # require 'uri'
 # require 'net/http'
-# require 'http'
+require 'http'
 require 'open-uri'
 require 'nokogiri'
 require 'base64'
@@ -19,12 +19,12 @@ require 'active_support/core_ext/string/access'
 # workbook = RubyXL::Parser.parse('app/assets/prices/Price_LM_10.05.2017.xlsx') # ("path/to/Excel/file.xlsx")
 # puts workbook
 
-s = SimpleSpreadsheet::Workbook.read('app/assets/prices/Price_LM_10.05.2017.xlsx')
-s.selected_sheet = s.sheets.first
-s.first_row.upto(s.last_row) do |line|
-  data = s.cell(line, 2)
-  puts data
-end
+# s = SimpleSpreadsheet::Workbook.read('app/assets/prices/Price_LM_10.05.2017.xlsx')
+# s.selected_sheet = s.sheets.first
+# s.first_row.upto(s.last_row) do |line|
+#   data = s.cell(line, 2)
+#   puts data
+# end
 
 # def get_purchase_price
 #   response = HTTP.follow.get('https://docs.google.com/spreadsheets/d/1oEZHsE-Wb3W4RLWu1Hewm9Xj4hj6_6eQ_NtbJCdwFUc/gviz/tq?tqx=out:csv&sheet=OrderLiquiMolySamara011116(13)')
@@ -45,11 +45,11 @@ def get_lm_product_data(product_id)
     # Full description (1)
     page.css('.product-description').first&.content,
     # Name, short decription and volume (2)
-    page.css('.product-info h1').first&.content.partition(' — '),
+    page.css('.product-info h1').first&.content&.partition(' — '),
     # Price (3)
-    page.css('.product-info span.price-new').first&.content&.gsub(/[^0-9\.]/, '')&.to_f,
+    page.css('.product-info span.price-new').first&.content&.gsub(/[^0-9\.]/, '')&.to_f
     # Source for image (4)
-    page.css('a#zoom_link1').first[:href]
+    # page.css('a#zoom_link1').first[:href]
   ]
 end
 
@@ -74,14 +74,14 @@ def checkdigit(barcode)
   (10 - ((odds.reduce(:+)) * 3 + evens.reduce(:+)) % 10) % 10
 end
 
-# def put_lm_product_price(product_barcode, price, short_description, title, weight, weight_1)
-#   page = HTTP.headers(authorization: "Token 69be0fb43ae944941c9aea1f12e16497").put("https://xp.extrapost.ru/api/v1/products/#{product_barcode}",
-#                       json: {product: {price: price,
-#                                        description: short_description,
-#                                        title: title,
-#                                        weight: weight_1
-#                                       }})
-# end
+def put_lm_product_price(product_barcode, price, short_description, title, weight, weight_1)
+  page = HTTP.headers(authorization: "Token 69be0fb43ae944941c9aea1f12e16497").put("https://xp.extrapost.ru/api/v1/products/#{product_barcode}",
+                      json: {product: {price: price,
+                                       description: short_description,
+                                       title: title,
+                                       weight: weight_1
+                                      }})
+end
 
 # def create_product(product_barcode, price)
 #   page = HTTP.headers(authorization: "Token 69be0fb43ae944941c9aea1f12e16497").post("https://xp.extrapost.ru/api/v1/products/",
@@ -90,31 +90,34 @@ end
 
 # get_purchase_price
 
-# (402..402).each do |product_id|
-#   result = get_lm_product_data(product_id)
-#   next if result[0].nil?
+
+(324..324).each do |product_id|
+  result = get_lm_product_data(product_id)
+  next if result[0].nil?
+
+  barcode = barcode_from_product_art(result[0])
+  price = result[3]
+
+  short_description = result[2][2].split(' ')
+  short_description[-2..-1] = nil
+  short_description = short_description.join(' ')
+
+  weight = result[2][2].split(' ')
+  weight_1 = weight[-2]
+  weight = weight_1 + ' L'
+
+  name = result[2].first.partition(' — ').first
+  title = "Liqui Moly #{name} (#{weight}) (art: #{result[0]})"
+
 #
-#   barcode = barcode_from_product_art(result[0])
-#   price = result[3]
 #
-#   short_description = result[2][2].split(' ')
-#   short_description[-2..-1] = nil
-#   short_description = short_description.join(' ')
+  # puts name, title, weight
+  # puts barcode, price, short_description, title, weight, weight_1
 #
-#   weight = result[2][2].split(' ')
-#   weight_1 = weight[-2]
-#   weight = weight_1 + ' L'
-#
-#   name = result[2].first.partition(' — ').first
-#   title = "Liqui Moly #{name} (#{weight}) (art: #{result[0]})"
-#
-# #
-# #
-#   # puts name, title, weight
-# #
-#     # puts get_lm_product_image(product_id)
-# #   # puts price, barcode
-# #   get_lm_product_data(product_id)
-#
-#   # put_lm_product_price(barcode, price, short_description, title, weight, weight_1)
-# end
+    # puts get_lm_product_image(product_id)
+#   # puts price, barcode
+# get_lm_product_data(product_id)
+puts barcode, price, short_description, title, weight, weight_1
+
+  put_lm_product_price(barcode, price, short_description, title, weight, weight_1)
+end
