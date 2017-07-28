@@ -45,7 +45,7 @@ def get_lm_product_data(product_id)
     # Full description (1)
     page.css('.product-description').first&.content,
     # Name, short decription and volume (2)
-    page.css('.product-info h1').first&.content&.partition(' — '),
+    page.css('.product-info h1').first&.content.partition(/( - | — )/),
     # Price (3)
     page.css('.product-info span.price-new').first&.content&.gsub(/[^0-9\.]/, '')&.to_f
     # Source for image (4)
@@ -74,50 +74,56 @@ def checkdigit(barcode)
   (10 - ((odds.reduce(:+)) * 3 + evens.reduce(:+)) % 10) % 10
 end
 
-def put_lm_product_price(product_barcode, price, short_description, title, weight, weight_1)
-  page = HTTP.headers(authorization: "Token 69be0fb43ae944941c9aea1f12e16497").put("https://xp.extrapost.ru/api/v1/products/#{product_barcode}",
-                      json: {product: {price: price,
-                                       description: short_description,
-                                       title: title,
-                                       weight: weight_1
-                                      }})
-end
+# def put_lm_product_price(product_barcode, price, short_description, title, weight)
+#   page = HTTP.headers(authorization: "Token 69be0fb43ae944941c9aea1f12e16497").put("https://xp.extrapost.ru/api/v1/products/#{product_barcode}",
+#                       json: {product: {price: price,
+#                                        description: short_description,
+#                                        title: title,
+#                                        weight: weight
+#                                       }})
+# end
 
 # def create_product(product_barcode, price)
 #   page = HTTP.headers(authorization: "Token 69be0fb43ae944941c9aea1f12e16497").post("https://xp.extrapost.ru/api/v1/products/",
 #                       json: {product: {price: "#{price}"}})
 # end
 
-# get_purchase_price
-
-
-(324..324).each do |product_id|
+(2269..2269).each do |product_id|
   result = get_lm_product_data(product_id)
   next if result[0].nil?
+
+  name = result[2].first.partition(' — ').first
 
   barcode = barcode_from_product_art(result[0])
   price = result[3]
 
-  short_description = result[2][2].split(' ')
-  short_description[-2..-1] = nil
-  short_description = short_description.join(' ')
+  if result[2].include?(' — ')
+    short_desc = result[2].last
+    short_desc = short_desc.split(' ')
+    short_desc.pop
+    short_desc.pop
+    short_desc = short_desc.join(' ')
 
-  weight = result[2][2].split(' ')
-  weight_1 = weight[-2]
-  weight = weight_1 + ' L'
+    data = result[2].last.split(' ')
+    weight = data[-2]
+    weight = weight + ' L'
 
-  name = result[2].first.partition(' — ').first
-  title = "Liqui Moly #{name} (#{weight}) (art: #{result[0]})"
+    title = "Liqui Moly #{name} (#{weight}) (art: #{result[0]})"
 
-#
-#
+  else
+
+    short_desc = get_lm_product_data(product_id)[2].last
+
+    title = "Liqui Moly #{name} (art: #{result[0]})"
+
+  end
+
   # puts name, title, weight
-  # puts barcode, price, short_description, title, weight, weight_1
-#
-    # puts get_lm_product_image(product_id)
-#   # puts price, barcode
-# get_lm_product_data(product_id)
-puts barcode, price, short_description, title, weight, weight_1
+  # puts get_lm_product_image(product_id)
+# puts get_lm_product_data(product_id)[2]
+# puts short_description
 
-  put_lm_product_price(barcode, price, short_description, title, weight, weight_1)
+  puts barcode, price, short_desc, title, weight
+
+  # put_lm_product_price(barcode, price, short_description, title, weight)
 end

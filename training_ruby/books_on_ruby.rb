@@ -90,29 +90,42 @@ class Sequence
 end
 
 
-class Dragon
+class User
+  @@users_count = 0
 
-  def initialize(name)
-    @@name = name
-    puts @@name + ' родился.'
+  def initialize(login, password, email)
+    @id       = @@users_count += 1
+    @login    = login
+    @password = password
+    @email    = email
   end
 
-  # def count
-  #
-  #   while @@name = gets.chomp
-  #     if @@name == 'q'
-  #       break
-  #     else
-  #       puts @@name + ' родился.'
-  #     end
-  #     puts @@name
-  #   end
-  # end
+  def user_data
+    @user_data ||=
+    {
+      id: @id,
+      login: @login,
+      password: @password,
+      email: @email
+    }
+  end
 
-  Dragon.new('Flippy')
-  Dragon.new('Jimmy')
+  def just
+    puts 'Just an inscription'
+  end
+
+  def self.users_count
+    @@users_count
+  end
+
 end
 
+user = User.new('John', '123', 'sample@mail.ru')
+user = User.new('Smith', '456', 'another@mail.ru')
+user.just
+# User.just
+
+puts user.user_data
 # p = Array.new( ( print "Введите размерность массива: " ; gets.to_i ) ){ |i|
 #   print "Введите #{i}-й элемент массива: " ; gets.to_f }
 # puts p
