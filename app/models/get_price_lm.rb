@@ -74,32 +74,48 @@
     (10 - ((odds.reduce(:+)) * 3 + evens.reduce(:+)) % 10) % 10
   end
 
-  # def put_lm_product_price(barcode, store_id, price, short_desc, title, weight_number)
-  #   page = HTTP.headers(authorization: "Token 69be0fb43ae944941c9aea1f12e16497").put("https://xp.extrapost.ru/api/v1/products/#{barcode}",
-  #                       json: {product: {
-  #                                        barcode: barcode,
-  #                                        store_id: store_id,
-  #                                        price: price,
-  #                                        description: short_desc,
-  #                                        title: title,
-  #                                        weight: weight_number
-  #                                       }})
-  # end
+                             # sku пока использовать только при создании новых товаров.
 
-  # def create_product(product_barcode, price)
-  #   page = HTTP.headers(authorization: "Token 69be0fb43ae944941c9aea1f12e16497").post("https://xp.extrapost.ru/api/v1/products/",
-  #                       json: {product: {price: "#{price}"}})
-  # end
+  def put_lm_product_price(purchase_price, barcode, store_id, price, short_desc, title, weight_number)
+    page = HTTP.headers(authorization: "Token 69be0fb43ae944941c9aea1f12e16497").put("https://xp.extrapost.ru/api/v1/products/#{barcode}",
+                        json: {product: {purchase_price: purchase_price,
+                                         barcode: barcode,
+                                         store_id: store_id,
+                                         price: price,
+                                         description: short_desc,
+                                         title: title,
+                                         weight: weight_number
+                                        }})
+  end
 
-  (0..2000).each do |product_id|
+  def create_product(purchase_price, sku, barcode, store_id, price, short_desc, title, weight_number)
+    page = HTTP.headers(authorization: "Token 69be0fb43ae944941c9aea1f12e16497").post("https://xp.extrapost.ru/api/v1/products/",
+                       json: {product: { purchase_price: purchase_price,
+                                         sku: sku,
+                                         barcode: barcode,
+                                         store_id: store_id,
+                                         price: price,
+                                         description: short_desc,
+                                         title: title,
+                                         weight: weight_number
+                                        }})
+  end
+
+  (0..5).each do |product_id|
     result = get_lm_product_data(product_id)
     next if result[0].nil?
 
     name = result[2].first.partition(' — ').first
 
+    weight_number_sourse = result[2].last.split(' ')
+    weight_number = weight_number_sourse[-2]
+    next if weight_number.to_f > 20
+
     barcode = barcode_from_product_art(result[0])
 
     price = result[3]
+
+    purchase_price = price * 0.75
 
     store_id = 3 # Avto-Raketa
 
@@ -110,8 +126,6 @@
       short_desc.pop
       short_desc = short_desc.join(' ')
 
-      data = result[2].last.split(' ')
-      weight_number = data[-2]
       weight = weight_number + ' L'
 
       title = "Liqui Moly #{name} (#{weight}) (art: #{result[0]})"
@@ -128,46 +142,40 @@
     def generate_sku(name, weight_number)
 
       sku = "lm_#{name.downcase.gsub(/-|[ ]/, '_')}_#{weight_number}"
-      puts sku.length
 
       if sku.length > 32
           sku_part = sku.gsub(/_/, ' ').split
           sku_part_new = sku_part.map { |word| word.length >= 10 ? word = word[0..4] : word }
           sku_full = "#{sku_part_new.join('_')}"
           sku = sku_full
-          puts sku.length
 
           if sku_full.length > 32
             sku_full_part = sku_full.gsub(/_/, ' ').split
             sku_full_new = sku_full_part.map { |word| word.length <= 9 && word.length >= 5 ? word = word[0..2] : word }
             sku_full_end = "#{sku_full_new.join('_')}"
             sku = sku_full_end
-            puts sku.length
 
               if sku_full_end.length > 32
                 sku_full_short = sku_full_end.gsub(/_/, ' ').split
                 sku_full_short.delete_at(1)
                 sku_full_short_end = "#{sku_full_short.join('_')}"
                 sku = sku_full_short_end
-                puts sku.length
               else
                 sku
-                puts sku.length
               end
-
           else
             sku
-            puts sku.length
           end
 
-      else
-        sku
-        puts sku.length
-      end
+        else
+          sku
+        end
 
     end
 
+    sku = generate_sku(name, weight_number)
 
-    puts generate_sku(name, weight_number)#, barcode, store_id, price, short_desc, title, weight_number
-    # put_lm_product_price(barcode, store_id, price, short_desc, title, weight_number)
+    # puts purchase_price, sku, barcode, store_id, price, short_desc, title, weight_number
+    puts put_lm_product_price(purchase_price, barcode, store_id, price, short_desc, title, weight_number)
+    # create_product(purchase_price, sku, barcode, store_id, price, short_desc, title, weight_number)
   end
