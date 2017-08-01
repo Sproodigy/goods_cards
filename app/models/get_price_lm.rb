@@ -14,17 +14,11 @@
   require 'json'
   require 'active_support/core_ext/string/access'
 
-  # file = File.open("app/assets/prices/Price_LM_10.05.2017.xlsx")
-  # puts file
-  # workbook = RubyXL::Parser.parse('app/assets/prices/Price_LM_10.05.2017.xlsx') # ("path/to/Excel/file.xlsx")
-  # puts workbook
-
-  # s = SimpleSpreadsheet::Workbook.read('app/assets/prices/Price_LM_10.05.2017.xlsx')
-  # s.selected_sheet = s.sheets.first
-  # s.first_row.upto(s.last_row) do |line|
-  #   data = s.cell(line, 2)
-  #   puts data
-  # end
+  # file = File.open("/Users/extra/RubymineProjects/goods_cards/app/assets/prices/Price_LM_10.05.2017.xlsx")
+  # workbook = RubyXL::Parser.parse('/Users/extra/RubymineProjects/goods_cards/app/assets/prices/Price_LM_10.05.2017.xlsx') # ("path/to/Excel/file.xlsx")
+  # worksheet = workbook[0]
+  # cell = worksheet[3][3]
+  # puts cell
 
   # def get_purchase_price
   #   response = HTTP.follow.get('https://docs.google.com/spreadsheets/d/1oEZHsE-Wb3W4RLWu1Hewm9Xj4hj6_6eQ_NtbJCdwFUc/gviz/tq?tqx=out:csv&sheet=OrderLiquiMolySamara011116(13)')
@@ -37,7 +31,6 @@
   def get_lm_product_data(product_id)
     # Load page html and parse it with Nokogiri
     page = Nokogiri::HTML(HTTP.follow.get("http://www.lm-shop.ru/index.php?route=product/product&product_id=#{product_id}").to_s)
-
     # Select html element from page and print it
     [
       # Art (0)
@@ -47,21 +40,48 @@
       # Name, short decription and volume (2)
       page.css('.product-info h1').first&.content&.partition(/( - | — )/),
       # Price (3)
-      page.css('.product-info span.price-new').first&.content&.gsub(/[^0-9\.]/, '')&.to_f
+      page.css('.product-info span.price-new').first&.content&.gsub(/[^0-9\.]/, '')&.to_f,
       # Source for image (4)
-      # page.css('a#zoom_link1').first[:href]
+      (page.css('a#zoom_link1').first[:href] unless page.css('a#zoom_link1').first.nil?)
     ]
   end
+
+  # def get_purchase_price(product_art)
+    # Also supports csv, csvt and tsv formats
+
+    s = SimpleSpreadsheet::Workbook.read('/Users/extra/RubymineProjects/goods_cards/app/assets/prices/Price_LM_10.05.2017.xlsx')
+    s.selected_sheet = s.sheets[0]
+    s.first_row.upto(s.last_row) do |line|
+      art_shen = s.cell(line, 4)
+
+      next if art_shen == nil
+
+      if art_shen.to_s.include?('/')
+        art_shu = art_shen
+      else
+        art_shu = art_shen.to_s.gsub(/[^0-9]/, '')
+      end
+
+      puts art_shu
+      price = s.cell(line, 7)
+      # data_shen = Hash[art, price]
+      # puts data_shen.keys
+      # data_shu = data_shen.map { |key, value| key = key.gsub(/^[0-9]/), value = value.gsub(/^[0-9]/)}
+      # puts data_shu
+    end
+  # end
+
 
   def get_lm_product_image(product_id)
 
     src = get_lm_product_data(product_id)[4]
     name = get_lm_product_data(product_id)[2].first.gsub(/[ ]/, '_')
 
-    # Base64.encode64(open(src) { |f| f.read })
-    File.open('Liqui_Moly_' + "#{name}" + '_' + File.basename(src), 'wb') { |f| f.write(open(src).read) }
+    Base64.encode64(open(src) { |f| f.read })
+    # File.open('Liqui_Moly_' + "#{name}" + '_' + File.basename(src), 'wb') { |f| f.write(open(src).read) }
     # Save image to folder on the hard drive
     # IO.copy_stream(open(src), "/home/sproodigy/Foto/Liqui_Moly_#{name}_#{get_lm_product_data(product_id)[1].first(-1)}_#{File.basename(src)}")
+    # IO.copy_stream(open(src), "/home/extra/Liqui_Moly_#{name}_#{get_lm_product_data(product_id)[4].first(-1)}_#{File.basename(src)}")
   end
 
   def barcode_from_product_art(product_art)
@@ -76,30 +96,30 @@
 
                              # sku пока использовать только при создании новых товаров.
 
-  def put_lm_product_price(purchase_price, barcode, store_id, price, short_desc, title, weight_number)
-    page = HTTP.headers(authorization: "Token 69be0fb43ae944941c9aea1f12e16497").put("https://xp.extrapost.ru/api/v1/products/#{barcode}",
-                        json: {product: {purchase_price: purchase_price,
-                                         barcode: barcode,
-                                         store_id: store_id,
-                                         price: price,
-                                         description: short_desc,
-                                         title: title,
-                                         weight: weight_number
-                                        }})
-  end
-
-  def create_product(purchase_price, sku, barcode, store_id, price, short_desc, title, weight_number)
-    page = HTTP.headers(authorization: "Token 69be0fb43ae944941c9aea1f12e16497").post("https://xp.extrapost.ru/api/v1/products/",
-                       json: {product: { purchase_price: purchase_price,
-                                         sku: sku,
-                                         barcode: barcode,
-                                         store_id: store_id,
-                                         price: price,
-                                         description: short_desc,
-                                         title: title,
-                                         weight: weight_number
-                                        }})
-  end
+  # def put_lm_product_price(purchase_price, barcode, store_id, price, short_desc, title, weight_number)
+  #   page = HTTP.headers(authorization: "Token 69be0fb43ae944941c9aea1f12e16497").put("https://xp.extrapost.ru/api/v1/products/#{barcode}",
+  #                       json: {product: {purchase_price: purchase_price,
+  #                                        barcode: barcode,
+  #                                        store_id: store_id,
+  #                                        price: price,
+  #                                        description: short_desc,
+  #                                        title: title,
+  #                                        weight: weight_number
+  #                                       }})
+  # end
+  #
+  # def create_product(purchase_price, sku, barcode, store_id, price, short_desc, title, weight_number)
+  #   page = HTTP.headers(authorization: "Token 69be0fb43ae944941c9aea1f12e16497").post("https://xp.extrapost.ru/api/v1/products/",
+  #                      json: {product: { purchase_price: purchase_price,
+  #                                        sku: sku,
+  #                                        barcode: barcode,
+  #                                        store_id: store_id,
+  #                                        price: price,
+  #                                        description: short_desc,
+  #                                        title: title,
+  #                                        weight: weight_number
+  #                                       }})
+  # end
 
   (0..5).each do |product_id|
     result = get_lm_product_data(product_id)
@@ -115,7 +135,7 @@
 
     price = result[3]
 
-    purchase_price = price * 0.75
+    # purchase_price = get_purchase_price(result[0])
 
     store_id = 3 # Avto-Raketa
 
@@ -141,41 +161,36 @@
 
     def generate_sku(name, weight_number)
 
-      sku = "lm_#{name.downcase.gsub(/-|[ ]/, '_')}_#{weight_number}"
+      sku_full = "lm_#{name.downcase.gsub(/-|[ ]/, '_')}_#{weight_number}"
 
-      if sku.length > 32
-          sku_part = sku.gsub(/_/, ' ').split
-          sku_part_new = sku_part.map { |word| word.length >= 10 ? word = word[0..4] : word }
-          sku_full = "#{sku_part_new.join('_')}"
-          sku = sku_full
+      if sku_full.length > 32
+          sku_full_part = sku_full.gsub(/_/, ' ').split
+          sku_full_part_new = sku_full_part.map { |word| word.length >= 10 ? word = word[0..4] : word }
+          sku = sku_full_part_new = "#{sku_full_part_new.join('_')}"
 
-          if sku_full.length > 32
-            sku_full_part = sku_full.gsub(/_/, ' ').split
-            sku_full_new = sku_full_part.map { |word| word.length <= 9 && word.length >= 5 ? word = word[0..2] : word }
-            sku_full_end = "#{sku_full_new.join('_')}"
-            sku = sku_full_end
+          if sku_full_part_new.length > 32
+              sku_part = sku_full_part_new.gsub(/_/, ' ').split
+              sku_part_new = sku_part.map { |word| word.length <= 9 && word.length >= 5 ? word = word[0..2] : word }
+              sku = sku_part_short = "#{sku_part_new.join('_')}"
 
-              if sku_full_end.length > 32
-                sku_full_short = sku_full_end.gsub(/_/, ' ').split
-                sku_full_short.delete_at(1)
-                sku_full_short_end = "#{sku_full_short.join('_')}"
-                sku = sku_full_short_end
+              if sku_part_short.length > 32
+                  sku_part_end = sku_part_short.gsub(/_/, ' ').split
+                  sku_part_end.delete_at(1)
+                  sku = sku_part_end_new = "#{sku_part_end_new.join('_')}"
               else
-                sku
+                sku_full
               end
           else
-            sku
+            sku_full
           end
-
-        else
-          sku
-        end
-
+      else
+        sku_full
+      end
     end
 
     sku = generate_sku(name, weight_number)
 
     # puts purchase_price, sku, barcode, store_id, price, short_desc, title, weight_number
-    puts put_lm_product_price(purchase_price, barcode, store_id, price, short_desc, title, weight_number)
+    # puts put_lm_product_price(purchase_price, barcode, store_id, price, short_desc, title, weight_number)
     # create_product(purchase_price, sku, barcode, store_id, price, short_desc, title, weight_number)
   end
