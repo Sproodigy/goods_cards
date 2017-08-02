@@ -41,38 +41,43 @@
       page.css('.product-info h1').first&.content&.partition(/( - | — )/),
       # Price (3)
       page.css('.product-info span.price-new').first&.content&.gsub(/[^0-9\.]/, '')&.to_f,
-      # Source for image (4)
+      # Image (4)
       (page.css('a#zoom_link1').first[:href] unless page.css('a#zoom_link1').first.nil?)
+      # Name and sku (5)
+      # page.css(".infoleft #{Модель:}")
     ]
   end
 
   def get_purchase_price(product_art)
     # Also supports csv, csvt and tsv formats
 
-    s = SimpleSpreadsheet::Workbook.read('/Users/extra/RubymineProjects/goods_cards/app/assets/prices/Price_LM_10.05.2017.xlsx')
+    s = SimpleSpreadsheet::Workbook.read('/home/sproodigy/goods_cards/app/assets/prices/Price_LM_10.05.2017.xlsx')
     s.selected_sheet = s.sheets[0]
     s.first_row.upto(s.last_row) do |line|
       art_shen = s.cell(line, 4)
       pur_price = s.cell(line, 7)
+      data_1 = Hash.new
+      data_2 = Hash.new
 
       next if art_shen == nil
 
       if art_shen.to_s.include?('/')
-        double_art = art_shen.to_s.gsub(/[\/ |*]/, ' ').partition(' ')
+        double_art = art_shen.to_s.gsub(/[\/]/, ' ').partition(' ')
         double_art.each do |art|
           next if art == ' '
           art_shu = art.gsub(/[^0-9]/, '')
+          data_1[art_shu] = pur_price
         end
       else
         art_shu = art_shen.to_s.gsub(/[^0-9]/, '')
+        data_2[art_shu] = pur_price
       end
 
-      data = Hash[art_shu, pur_price]
-      data.each { |key, value| puts "#{key}: #{value}" if key == 1995}
+      data_full = data_2.merge!(data_1)
 
-      data.each do |key, value|
+      data_full.each do |key, value|
         if key == product_art then value = pur_price
-          return pur_price
+          return pur_price.to_f
         end
       end
     end
@@ -127,36 +132,38 @@
   #                                       }})
   # end
 
-  (9..9).each do |product_id|
+  (2100..2300).each do |product_id|
     result = get_lm_product_data(product_id)
     next if result[0].nil?
 
     name = result[2].first.partition(' — ').first
 
-    weight_number_sourse = result[2].last.split(' ')
-    weight_number = weight_number_sourse[-2]
-    next if weight_number.to_f > 20
+    # weight_number = ''
+
 
     barcode = barcode_from_product_art(result[0])
 
     price = result[3]
 
     purchase_price = get_purchase_price(result[0])
+    if purchase_price.nil? then puts result[0], 'Not finded' end
 
     store_id = 3 # Avto-Raketa
 
     if result[2].include?(' — ')
-      short_desc = result[2].last
-      short_desc = short_desc.split(' ')
-      short_desc.pop
-      short_desc.pop
-      short_desc = short_desc.join(' ')
+      data = result[2].last.split(' ')
 
+      weight_number = data[-2]
+      next if weight_number.to_f > 20
       weight = weight_number + ' L'
+
+      data.pop
+      data.pop
+      short_desc = data.join(' ')
 
       title = "Liqui Moly #{name} (#{weight}) (art: #{result[0]})"
     else
-      short_desc = get_lm_product_data(product_id)[2].last
+      short_desc = result[2].last
 
       title = "Liqui Moly #{name} (art: #{result[0]})"
     end
@@ -168,6 +175,7 @@
     def generate_sku(name, weight_number)
 
       sku_full = "lm_#{name.downcase.gsub(/-|[ ]/, '_')}_#{weight_number}"
+      # if sku_full[-1] == '_' then sku_full = sku_full[0..sku_full.length-2] end
 
       if sku_full.length > 32
           sku_full_part = sku_full.gsub(/_/, ' ').split
@@ -182,7 +190,7 @@
               if sku_part_short.length > 32
                   sku_part_end = sku_part_short.gsub(/_/, ' ').split
                   sku_part_end.delete_at(1)
-                  sku = "#{sku_part_end_new.join('_')}"
+                  sku = "#{sku_part_end.join('_')}"
               else
                 sku_full
               end
@@ -196,8 +204,10 @@
 
     sku = generate_sku(name, weight_number)
 
-    # puts purchase_price, sku, barcode, store_id, price, short_desc, title, weight_number
-    puts purchase_price, title, price, '= - = - ='
+    # puts get_lm_product_data(product_id)[5]
+
+    puts purchase_price, sku, barcode, store_id, price, short_desc, title, weight_number, '= - = - ='
+    # puts purchase_price, sku, price, '= - = - ='
     # puts put_lm_product_price(purchase_price, barcode, store_id, price, short_desc, title, weight_number)
     # create_product(purchase_price, sku, barcode, store_id, price, short_desc, title, weight_number)
   end
