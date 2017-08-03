@@ -1,6 +1,9 @@
   require 'rubyXL'
   require 'roo-xls'
   require 'simple-spreadsheet'
+  # require 'simple-xls'
+  # require 'httparty'
+  # require 'pry'
   # require 'csv'
   # require 'uri'
   # require 'net/http'
@@ -48,7 +51,7 @@
   def get_purchase_price(product_art)
     # Also supports csv, csvt and tsv formats
 
-    s = SimpleSpreadsheet::Workbook.read('/Users/extra/RubymineProjects/goods_cards/app/assets/prices/Price_LM_10.05.2017.xlsx')
+    s = SimpleSpreadsheet::Workbook.read('/home/sproodigy/goods_cards/app/assets/prices/Price_LM_10.05.2017.xlsx')
     s.selected_sheet = s.sheets[0]
     s.first_row.upto(s.last_row) do |line|
       art_shen = s.cell(line, 4)
@@ -129,18 +132,20 @@
   #                                       }})
   # end
 
-  (1418..1418).each do |product_id|
+  (1600..2000).each do |product_id|
     result = get_lm_product_data(product_id)
     next if result[0].nil?
 
     name = result[2].first.partition(' — ').first
+
+    # weight_number = ''
+
 
     barcode = barcode_from_product_art(result[0])
 
     price = result[3]
 
     purchase_price = get_purchase_price(result[0])
-    if purchase_price.nil? then puts result[0], 'Not finded' end
 
     store_id = 3 # Avto-Raketa
 
@@ -153,17 +158,26 @@
 
       data.pop
       data.pop
-      short_desc = data.join(' ').gsub(/[^A-Zа-яА-Я0-9%,"()-]/, ' ')
+      short_desc = data.join(' ')
 
       title = "Liqui Moly #{name} (#{weight}) (art: #{result[0]})"
-    else
+    elsif
       short_desc = result[2].last
 
       title = "Liqui Moly #{name} (art: #{result[0]})"
+    else
+      data = result[2].map do |word, i|
+        if /[A-Za-z]/.match(word) then
+          short_desc = data[i] << word
+        else
+          data.delete_at(i)
+          short_desc = data
+        end
+      end
     end
 
     if short_desc.length > 64
-      short_desc = short_desc.partition(' ').delete_at(-1)
+      short_desc = short_desc[0..63]
     end
 
     def generate_sku(name, weight_number)
@@ -173,20 +187,18 @@
 
       if sku_full.length > 32
           sku_full_part = sku_full.gsub(/_/, ' ').split
-          sku_full_part_new = sku_full_part.map { |word| word.length >= 9 ? word = word[0..4] : word }
-          sku_full_part_new = "#{sku_full_part_new.join('_')}"
-          sku_full = sku_full_part_new
+          sku_full_part_new = sku_full_part.map { |word| word.length >= 10 ? word = word[0..4] : word }
+          sku = sku_full_part_new = "#{sku_full_part_new.join('_')}"
 
           if sku_full_part_new.length > 32
               sku_part = sku_full_part_new.gsub(/_/, ' ').split
-              sku_part_new = sku_part.map { |word| word.length <= 8 && word.length >= 5 ? word = word[0..2] : word }
-              sku_part_new = "#{sku_part_new.join('_')}"
-              sku_full = sku_part_new
+              sku_part_new = sku_part.map { |word| word.length <= 9 && word.length >= 5 ? word = word[0..2] : word }
+              sku = sku_part_short = "#{sku_part_new.join('_')}"
 
-              if sku_part_new.length > 32
-                  sku_part_end = sku_part_new.gsub(/_/, ' ').split
+              if sku_part_short.length > 32
+                  sku_part_end = sku_part_short.gsub(/_/, ' ').split
                   sku_part_end.delete_at(1)
-                  sku_full = "#{sku_part_end.join('_')}"
+                  sku = "#{sku_part_end.join('_')}"
               else
                 sku_full
               end
@@ -202,10 +214,9 @@
 
     # puts get_lm_product_data(product_id)[5]
 
-    # puts short_desc, title, '= - = - ='
-    # puts "#{name}:   #{name.length}", "#{sku}:   #{sku.length}", '= - = - ='
-    # puts "#{name}:   #{name.length}", "#{sku}:   #{sku.length}", '= - = - ='
+    puts short_desc
+    # puts purchase_price, sku, barcode, store_id, price, short_desc, title, weight_number, '= - = - ='
+    # puts purchase_price, sku, price, '= - = - ='
     # puts put_lm_product_price(purchase_price, barcode, store_id, price, short_desc, title, weight_number)
-    puts weight_number, "#{purchase_price}:   #{price}", "#{short_desc}:   #{short_desc.length}", title, "#{sku}:   #{sku.length}", '= - = - ='
     # create_product(purchase_price, sku, barcode, store_id, price, short_desc, title, weight_number)
   end
