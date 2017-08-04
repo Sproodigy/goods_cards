@@ -43,16 +43,16 @@
       # Price (3)
       page.css('.product-info span.price-new').first&.content&.gsub(/[^0-9\.]/, '')&.to_f,
       # Image (4)
-      (page.css('a#zoom_link1').first[:href] unless page.css('a#zoom_link1').first.nil?)
-      # Name and sku (5)
-      # page.css(".infoleft #{Модель:}")
+      (page.css('a#zoom_link1').first[:href] unless page.css('a#zoom_link1').first.nil?),
+      # Volume (5)
+      page.css('#tab-attribute > table.attribute > tbody > tr:nth-last-child(1) > td:nth-child(2)').last&.content
     ]
   end
 
   def get_purchase_price(product_art)
     # Also supports csv, csvt and tsv formats
 
-    s = SimpleSpreadsheet::Workbook.read('/Users/extra/RubymineProjects/goods_cards/app/assets/prices/Price_LM_10.05.2017.xlsx')
+    s = SimpleSpreadsheet::Workbook.read('/home/sproodigy/goods_cards/app/assets/prices/Price_LM_10.05.2017.xlsx')
     s.selected_sheet = s.sheets[0]
     s.first_row.upto(s.last_row) do |line|
       art_shen = s.cell(line, 4)
@@ -133,11 +133,10 @@
   #                                       }})
   # end
 
-  (1900..2120).each do |product_id|
+  (2272..2273).each do |product_id|
     result = get_lm_product_data(product_id)
     next if result[0].nil?
-
-    name = result[2]
+    puts result[5]
 
     barcode = barcode_from_product_art(result[0])
 
@@ -147,92 +146,87 @@
 
     store_id = 3 # Avto-Raketa
 
-    short_desc = ''
-    title = ''
-    src_for_title = name.partition(' — ').first
+    if result[2].include?(' — ')
+      data = result[2].partition(' — ')
+      short_desc = data.last
+      if short_desc.include?('</b>') then short_desc = short_desc.gsub(/<\/b>/, '') end
 
-    if name.include?(' — ')
-      data = name.partition(' — ').last.split(' ')
-      weight_number = data[-2]
+      weight_number = short_desc.split(' ')[-2]
       next if weight_number.to_f > 20
-      puts weight_number
-      weight = weight_number + ' L'
-      data.pop
-      data.pop
-      short_desc = data.join(' ') + '.'
-      title = "Liqui Moly #{src_for_title} (#{weight}) (art: #{result[0]})"
 
-      # if /[^0-9]/.match(weight_number) then
-      #   weight_number = data[-1].gsub(/[^0-9,]/, '')
-      #   weight = weight_number + ' L'
-      #   data.pop
-      #   short_desc = data.join(' ') + '.'
-      #   title = "Liqui Moly #{src_for_title} (#{weight}) (art: #{result[0]})"
-      # end
+      title = "Liqui Moly #{data.first} (art: #{result[0]})"
+
+      sku_full = "lm_#{data.first.downcase.gsub(/-|[ ]/, '_')}_#{weight_number}"
     elsif
       result[2].include?(' - ')
-      short_desc = result[2].partition(' - ').last + '.'
-      title = "Liqui Moly #{name} (art: #{result[0]})"
+      data = result[2].partition(' - ')
+      short_desc = data.last
+      title = "Liqui Moly #{data.first} (art: #{result[0]})"
+      sku_full = "lm_#{data.first.downcase.gsub(/-|[ ]/, '_')}"
     else
+      short_desc = ''
+      title = ''
       data = result[2].split(' ')
+
+      weight_number = data[-1].gsub(/[a-zA-Zа-яА-Я]/, '')
+      next if weight_number.to_f > 20
+
       data.each do |word|
         if /[А-Яа-я]/.match(word)
           short_desc = short_desc + word + ' '
         else
           /[a-zA-Z]/.match(word)
-          s = title + word + ' '
-          title = s
-          if s.include?(',') then title = s[0..-3]  + " (art: #{result[0]})" end
+          title = title + word + ' '
         end
       end
+
+      sku_full = "lm_#{title.downcase.gsub(/-|[ ]/, '_')}"
+      title = "Liqui Moly #{title}(art: #{result[0]})"
+
+
+
     end
-    # title = "Liqui Moly #{title} (art: #{result[0]})"
 
     if short_desc.length > 64
       data = short_desc.split
-      data.delete_at(-1)
-      short_desc = data.join(' ') + '.'
+      data.pop
+      data.pop
+      short_desc = data.join(' ')
     end
 
-    def generate_sku(src_for_title, weight_number)
+    if sku_full.length > 32
+        sku_full_part = sku_full.gsub(/_/, ' ').split
+        sku_full_part_new = sku_full_part.map { |word| word.length >= 10 ? word = word[0..4] : word }
+        sku_full_part_new = "#{sku_full_part_new.join('_')}"
+        sku_full = sku_full_part_new
 
-      sku_full = "lm_#{src_for_title.downcase.gsub(/-|[ ]/, '_')}_#{weight_number}"
-      # if sku_full[-1] == '_' then sku_full = sku_full[0..sku_full.length-2] end
+        if sku_full_part_new.length > 32
+            sku_part = sku_full_part_new.gsub(/_/, ' ').split
+            sku_part_new = sku_part.map { |word| word.length <= 9 && word.length >= 5 ? word = word[0..2] : word }
+            sku_part_new = "#{sku_part_new.join('_')}"
+            sku_full = sku_part_new
 
-      if sku_full.length > 32
-          sku_full_part = sku_full.gsub(/_/, ' ').split
-          sku_full_part_new = sku_full_part.map { |word| word.length >= 10 ? word = word[0..4] : word }
-          sku_full_part_new = "#{sku_full_part_new.join('_')}"
-          sku_full = sku_full_part_new
-
-          if sku_full_part_new.length > 32
-              sku_part = sku_full_part_new.gsub(/_/, ' ').split
-              sku_part_new = sku_part.map { |word| word.length <= 9 && word.length >= 5 ? word = word[0..2] : word }
-              sku_part_new = "#{sku_part_new.join('_')}"
-              sku_full = sku_part_new
-
-              if sku_part_new.length > 32
-                  sku_part_end = sku_part_new.gsub(/_/, ' ').split
-                  sku_part_end.delete_at(1)
-                  sku_full = "#{sku_part_end.join('_')}"
-              else
-                sku_full
-              end
-          else
-            sku_full
-          end
-      else
-        sku_full
-      end
+            if sku_part_new.length > 32
+                sku_part_end = sku_part_new.gsub(/_/, ' ').split
+                sku_part_end.delete_at(1)
+                sku_full = "#{sku_part_end.join('_')}"
+            else
+              sku_full
+            end
+        else
+          sku_full
+        end
+    else
+      sku_full
     end
-
-    sku = generate_sku(src_for_title, weight_number)
-
-    z << [short_desc, title, "#{sku}:  #{sku.length}", '- - - - - - - - - - - - - -']
+  #
+    # sku = generate_sku(src_for_title, weight_number)
+    #
+    # z << [result[2], "#{short_desc}:  #{short_desc.length}", title, "#{sku}:  #{sku.length}", '- - - - - - - - - - - - - -']
 
     # puts get_lm_product_data(product_id)[5]
 
-    # puts "#{short_desc}:   #{result[0]}"
+    puts "#{short_desc}==#{short_desc.length}:   #{result[0]}", title, "#{sku_full}:  " + "#{sku_full.length}", '----------------'
   #
   #   # puts purchase_price, sku, barcode, store_id, price, short_desc, title, weight_number, '= - = - ='
   #   # puts purchase_price, sku, price, '= - = - ='
@@ -240,4 +234,4 @@
   #   # create_product(purchase_price, sku, barcode, store_id, price, short_desc, title, weight_number)
   end
 
-  puts z
+  # puts z
