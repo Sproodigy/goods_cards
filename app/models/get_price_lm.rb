@@ -27,6 +27,7 @@
   #   price = CSV.parse(response_price.to_s)
   #   puts price
   # end
+  z = []
 
   def get_lm_product_data(product_id)
     # Load page html and parse it with Nokogiri
@@ -38,7 +39,7 @@
       # Full description (1)
       page.css('.product-description').first&.content,
       # Name, short decription and volume (2)
-      page.css('.product-info h1').first&.content&.partition(/( - | — )/),
+      (page.css('.product-info h1').first&.content unless page.css('.product-info h1').first&.content.nil?),
       # Price (3)
       page.css('.product-info span.price-new').first&.content&.gsub(/[^0-9\.]/, '')&.to_f,
       # Image (4)
@@ -51,7 +52,7 @@
   def get_purchase_price(product_art)
     # Also supports csv, csvt and tsv formats
 
-    s = SimpleSpreadsheet::Workbook.read('/home/sproodigy/goods_cards/app/assets/prices/Price_LM_10.05.2017.xlsx')
+    s = SimpleSpreadsheet::Workbook.read('/Users/extra/RubymineProjects/goods_cards/app/assets/prices/Price_LM_10.05.2017.xlsx')
     s.selected_sheet = s.sheets[0]
     s.first_row.upto(s.last_row) do |line|
       art_shen = s.cell(line, 4)
@@ -132,14 +133,11 @@
   #                                       }})
   # end
 
-  (1600..2000).each do |product_id|
+  (1900..2120).each do |product_id|
     result = get_lm_product_data(product_id)
     next if result[0].nil?
 
-    name = result[2].first.partition(' — ').first
-
-    # weight_number = ''
-
+    name = result[2]
 
     barcode = barcode_from_product_art(result[0])
 
@@ -149,56 +147,74 @@
 
     store_id = 3 # Avto-Raketa
 
-    if result[2].include?(' — ')
-      data = result[2].last.split(' ')
+    short_desc = ''
+    title = ''
+    src_for_title = name.partition(' — ').first
 
+    if name.include?(' — ')
+      data = name.partition(' — ').last.split(' ')
       weight_number = data[-2]
       next if weight_number.to_f > 20
+      puts weight_number
       weight = weight_number + ' L'
-
       data.pop
       data.pop
-      short_desc = data.join(' ')
+      short_desc = data.join(' ') + '.'
+      title = "Liqui Moly #{src_for_title} (#{weight}) (art: #{result[0]})"
 
-      title = "Liqui Moly #{name} (#{weight}) (art: #{result[0]})"
+      # if /[^0-9]/.match(weight_number) then
+      #   weight_number = data[-1].gsub(/[^0-9,]/, '')
+      #   weight = weight_number + ' L'
+      #   data.pop
+      #   short_desc = data.join(' ') + '.'
+      #   title = "Liqui Moly #{src_for_title} (#{weight}) (art: #{result[0]})"
+      # end
     elsif
-      short_desc = result[2].last
-
+      result[2].include?(' - ')
+      short_desc = result[2].partition(' - ').last + '.'
       title = "Liqui Moly #{name} (art: #{result[0]})"
     else
-      data = result[2].map do |word, i|
-        if /[A-Za-z]/.match(word) then
-          short_desc = data[i] << word
+      data = result[2].split(' ')
+      data.each do |word|
+        if /[А-Яа-я]/.match(word)
+          short_desc = short_desc + word + ' '
         else
-          data.delete_at(i)
-          short_desc = data
+          /[a-zA-Z]/.match(word)
+          s = title + word + ' '
+          title = s
+          if s.include?(',') then title = s[0..-3]  + " (art: #{result[0]})" end
         end
       end
     end
+    # title = "Liqui Moly #{title} (art: #{result[0]})"
 
     if short_desc.length > 64
-      short_desc = short_desc[0..63]
+      data = short_desc.split
+      data.delete_at(-1)
+      short_desc = data.join(' ') + '.'
     end
 
-    def generate_sku(name, weight_number)
+    def generate_sku(src_for_title, weight_number)
 
-      sku_full = "lm_#{name.downcase.gsub(/-|[ ]/, '_')}_#{weight_number}"
+      sku_full = "lm_#{src_for_title.downcase.gsub(/-|[ ]/, '_')}_#{weight_number}"
       # if sku_full[-1] == '_' then sku_full = sku_full[0..sku_full.length-2] end
 
       if sku_full.length > 32
           sku_full_part = sku_full.gsub(/_/, ' ').split
           sku_full_part_new = sku_full_part.map { |word| word.length >= 10 ? word = word[0..4] : word }
-          sku = sku_full_part_new = "#{sku_full_part_new.join('_')}"
+          sku_full_part_new = "#{sku_full_part_new.join('_')}"
+          sku_full = sku_full_part_new
 
           if sku_full_part_new.length > 32
               sku_part = sku_full_part_new.gsub(/_/, ' ').split
               sku_part_new = sku_part.map { |word| word.length <= 9 && word.length >= 5 ? word = word[0..2] : word }
-              sku = sku_part_short = "#{sku_part_new.join('_')}"
+              sku_part_new = "#{sku_part_new.join('_')}"
+              sku_full = sku_part_new
 
-              if sku_part_short.length > 32
-                  sku_part_end = sku_part_short.gsub(/_/, ' ').split
+              if sku_part_new.length > 32
+                  sku_part_end = sku_part_new.gsub(/_/, ' ').split
                   sku_part_end.delete_at(1)
-                  sku = "#{sku_part_end.join('_')}"
+                  sku_full = "#{sku_part_end.join('_')}"
               else
                 sku_full
               end
@@ -210,13 +226,18 @@
       end
     end
 
-    sku = generate_sku(name, weight_number)
+    sku = generate_sku(src_for_title, weight_number)
+
+    z << [short_desc, title, "#{sku}:  #{sku.length}", '- - - - - - - - - - - - - -']
 
     # puts get_lm_product_data(product_id)[5]
 
-    puts short_desc
-    # puts purchase_price, sku, barcode, store_id, price, short_desc, title, weight_number, '= - = - ='
-    # puts purchase_price, sku, price, '= - = - ='
-    # puts put_lm_product_price(purchase_price, barcode, store_id, price, short_desc, title, weight_number)
-    # create_product(purchase_price, sku, barcode, store_id, price, short_desc, title, weight_number)
+    # puts "#{short_desc}:   #{result[0]}"
+  #
+  #   # puts purchase_price, sku, barcode, store_id, price, short_desc, title, weight_number, '= - = - ='
+  #   # puts purchase_price, sku, price, '= - = - ='
+  #   # puts put_lm_product_price(purchase_price, barcode, store_id, price, short_desc, title, weight_number)
+  #   # create_product(purchase_price, sku, barcode, store_id, price, short_desc, title, weight_number)
   end
+
+  puts z
