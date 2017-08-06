@@ -1,6 +1,10 @@
+  # coding: utf-8
+
+  # require 'axlsx'   # For create xlsx files
   require 'rubyXL'
   require 'roo-xls'
   require 'simple-spreadsheet'
+
   # require 'simple-xls'
   # require 'httparty'
   # require 'pry'
@@ -13,6 +17,17 @@
   require 'base64'
   require 'json'
   require 'active_support/core_ext/string/access'
+
+#   Axlsx::Package.new do |p|
+#   p.workbook.add_worksheet(:name => "Pie Chart") do |sheet|
+#     sheet.add_row ["Simple Pie Chart"]
+#     %w(first second third).each { |label| sheet.add_row [label, rand(24)+1] }
+#     sheet.add_chart(Axlsx::Pie3DChart, :start_at => [0,5], :end_at => [10, 20], :title => "example 3: Pie Chart") do |chart|
+#       chart.add_series :data => sheet["B2:B4"], :labels => sheet["A2:A4"],  :colors => ['FF0000', '00FF00', '0000FF']
+#     end
+#   end
+#   p.serialize('simple.xlsx')
+# end
 
   # file = File.open("/Users/extra/RubymineProjects/goods_cards/app/assets/prices/Price_LM_10.05.2017.xlsx")
   # workbook = RubyXL::Parser.parse('/Users/extra/RubymineProjects/goods_cards/app/assets/prices/Price_LM_10.05.2017.xlsx') # ("path/to/Excel/file.xlsx")
@@ -40,12 +55,15 @@
       page.css('.product-description').first&.content,
       # Name, short decription and volume (2)
       (page.css('.product-info h1').first&.content unless page.css('.product-info h1').first&.content.nil?),
-      # Price (3)
+      # New price (3)
       page.css('.product-info span.price-new').first&.content&.gsub(/[^0-9\.]/, '')&.to_f,
       # Image (4)
       (page.css('a#zoom_link1').first[:href] unless page.css('a#zoom_link1').first.nil?),
-      # Volume (5)
-      page.css('#tab-attribute > table.attribute > tbody > tr:nth-last-child(1) > td:nth-child(2)').last&.content
+
+      page.css('#tab-attribute > table.attribute > tbody > tr:nth-last-child(1) > td:nth-child(2)').first&.content,
+      # Price (6)
+      page.css('.product-info .price').first&.content&.gsub(/[^0-9\.]/, '')&.to_f
+
     ]
   end
 
@@ -108,7 +126,7 @@
 
                              # sku пока использовать только при создании новых товаров.
 
-  # def put_lm_product_price(purchase_price, barcode, store_id, price, short_desc, title, weight_number)
+  # def put_lm_product_price(purchase_price, barcode, store_id, price, short_desc, title, weight)
   #   page = HTTP.headers(authorization: "Token 69be0fb43ae944941c9aea1f12e16497").put("https://xp.extrapost.ru/api/v1/products/#{barcode}",
   #                       json: {product: {purchase_price: purchase_price,
   #                                        barcode: barcode,
@@ -116,11 +134,11 @@
   #                                        price: price,
   #                                        description: short_desc,
   #                                        title: title,
-  #                                        weight: weight_number
+  #                                        weight: weight
   #                                       }})
   # end
   #
-  # def create_product(purchase_price, sku, barcode, store_id, price, short_desc, title, weight_number)
+  # def create_product(purchase_price, sku, barcode, store_id, price, short_desc, title, weight)
   #   page = HTTP.headers(authorization: "Token 69be0fb43ae944941c9aea1f12e16497").post("https://xp.extrapost.ru/api/v1/products/",
   #                      json: {product: { purchase_price: purchase_price,
   #                                        sku: sku,
@@ -129,18 +147,26 @@
   #                                        price: price,
   #                                        description: short_desc,
   #                                        title: title,
-  #                                        weight: weight_number
+  #                                        weight: weight
   #                                       }})
   # end
 
-  (2272..2273).each do |product_id|
+  (0..2360).each do |product_id|
     result = get_lm_product_data(product_id)
     next if result[0].nil?
-    puts result[5]
+    # puts result[6]
+
+    # if result[5] == /[a-zA-Zа-яА-Я]/
+    #   weight = result[5].gsub(/[a-zA-Zа-яА-Я]/, '')
+    #   next if weight > 20
+    # else
+    #   ''
+    # end
 
     barcode = barcode_from_product_art(result[0])
 
     price = result[3]
+    if result[3] == nil then price = result[6] end
 
     purchase_price = get_purchase_price(result[0])
 
@@ -151,45 +177,50 @@
       short_desc = data.last
       if short_desc.include?('</b>') then short_desc = short_desc.gsub(/<\/b>/, '') end
 
-      weight_number = short_desc.split(' ')[-2]
-      next if weight_number.to_f > 20
+      weight = result[5][0..-2].gsub(/[a-zA-Zа-яА-Я ]/, '') if /[a-zA-Zа-яА-Я]/.match(result[5])
+      next if weight.to_f > 20
+      # weight = short_desc.split(' ')[-2]
+      # next if weight.to_f > 20 && weight == nil
 
       title = "Liqui Moly #{data.first} (art: #{result[0]})"
 
-      sku_full = "lm_#{data.first.downcase.gsub(/-|[ ]/, '_')}_#{weight_number}"
+      sku_full = "lm_#{data.first.downcase.gsub(/-|[ ]/, '_')}_#{weight}"
     elsif
       result[2].include?(' - ')
       data = result[2].partition(' - ')
       short_desc = data.last
+
+      weight = result[5][0..-2].gsub(/[a-zA-Zа-яА-Я ]/, '') if /[a-zA-Zа-яА-Я]/.match(result[5])
+      next if weight.to_f > 20
+
       title = "Liqui Moly #{data.first} (art: #{result[0]})"
-      sku_full = "lm_#{data.first.downcase.gsub(/-|[ ]/, '_')}"
+      sku_full = "lm_#{data.first.downcase.gsub(/-|[ ]/, '_')}_#{weight}"
     else
       short_desc = ''
-      title = ''
-      data = result[2].split(' ')
+      title_src = ''
+      data = result[2].split(' ') unless result[2].nil?
 
-      weight_number = data[-1].gsub(/[a-zA-Zа-яА-Я]/, '')
-      next if weight_number.to_f > 20
+      # weight = data[-1].gsub(/[a-zA-Zа-яА-Я]/, '')
+      # next if weight.to_f > 20
 
       data.each do |word|
         if /[А-Яа-я]/.match(word)
           short_desc = short_desc + word + ' '
         else
           /[a-zA-Z]/.match(word)
-          title = title + word + ' '
+          title_src = title_src + word + ' '
         end
       end
 
-      sku_full = "lm_#{title.downcase.gsub(/-|[ ]/, '_')}"
-      title = "Liqui Moly #{title}(art: #{result[0]})"
-
-
+      weight = result[5][0..-2].gsub(/[a-zA-Zа-яА-Я ]/, '') if /[a-zA-Zа-яА-Я]/.match(result[5])
+      next if weight.to_f > 20
+      title = "Liqui Moly #{title_src}(art: #{result[0]})"
+      sku_full = "lm_#{title_src.downcase.gsub(/-|[ ]/, '_')}_#{weight}"
 
     end
 
     if short_desc.length > 64
-      data = short_desc.split
-      data.pop
+      data = short_desc[0..63].split(' ')
       data.pop
       short_desc = data.join(' ')
     end
@@ -219,19 +250,38 @@
     else
       sku_full
     end
-  #
-    # sku = generate_sku(src_for_title, weight_number)
-    #
-    # z << [result[2], "#{short_desc}:  #{short_desc.length}", title, "#{sku}:  #{sku.length}", '- - - - - - - - - - - - - -']
+
+    z << ["weight: #{weight}", "purch_price: #{purchase_price}", "price: #{price}", "#{short_desc}:  #{short_desc.length}", title, "#{sku_full}:  #{sku_full.length}", '- - - - - - - - - - - - - -']
+
+    case
+    when purchase_price.to_f <= 1
+      puts "purchase_price too small   #{result[0]}"
+    when price.to_f < purchase_price.to_f
+      puts "purchase_price too big   #{result[0]}"
+    when /[^0-9.,]/.match(purchase_price.to_s) && purchase_price == nil
+      puts "purchase_price is NAN   #{result[0]}"
+    when /[^0-9.,]/.match(price.to_s) && price == nil
+      puts "price is NAN   #{result[0]}"
+    when /[^0-9.,]/.match(weight.to_s)
+      puts "weight is NAN   #{result[0]}"
+    when weight.to_f > 20
+      puts "weight > 20    #{result[0]}"
+    when short_desc.length > 64
+      puts "short_desc.length > 64    #{result[0]}"
+    when sku_full.length > 32
+      puts "sku_full.length > 32    #{result[0]}"
+    end
+
+    # z << ["#{sku_full}:  #{sku_full.length}", '- - - - - - - - - - - - - -']
 
     # puts get_lm_product_data(product_id)[5]
 
-    puts "#{short_desc}==#{short_desc.length}:   #{result[0]}", title, "#{sku_full}:  " + "#{sku_full.length}", '----------------'
+    # puts "#{short_desc}==#{short_desc.length}:   #{result[0]}", title, "#{sku_full}:  " + "#{sku_full.length}", '----------------'
   #
-  #   # puts purchase_price, sku, barcode, store_id, price, short_desc, title, weight_number, '= - = - ='
+  #   # puts purchase_price, sku, barcode, store_id, price, short_desc, title, weight, '= - = - ='
   #   # puts purchase_price, sku, price, '= - = - ='
-  #   # puts put_lm_product_price(purchase_price, barcode, store_id, price, short_desc, title, weight_number)
-  #   # create_product(purchase_price, sku, barcode, store_id, price, short_desc, title, weight_number)
+  #   # puts put_lm_product_price(purchase_price, barcode, store_id, price, short_desc, title, weight)
+  #   # create_product(purchase_price, sku, barcode, store_id, price, short_desc, title, weight)
   end
 
   # puts z
