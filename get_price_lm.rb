@@ -4,11 +4,10 @@
   require 'rubyXL'
   require 'roo-xls'
   require 'simple-spreadsheet'
-
   # require 'simple-xls'
   # require 'httparty'
   # require 'pry'
-  # require 'csv'
+  require 'csv'
   # require 'uri'
   # require 'net/http'
   require 'http'
@@ -18,30 +17,14 @@
   require 'json'
   require 'active_support/core_ext/string/access'
 
-#   Axlsx::Package.new do |p|
-#   p.workbook.add_worksheet(:name => "Pie Chart") do |sheet|
-#     sheet.add_row ["Simple Pie Chart"]
-#     %w(first second third).each { |label| sheet.add_row [label, rand(24)+1] }
-#     sheet.add_chart(Axlsx::Pie3DChart, :start_at => [0,5], :end_at => [10, 20], :title => "example 3: Pie Chart") do |chart|
-#       chart.add_series :data => sheet["B2:B4"], :labels => sheet["A2:A4"],  :colors => ['FF0000', '00FF00', '0000FF']
-#     end
-#   end
-#   p.serialize('simple.xlsx')
-# end
-
-  # file = File.open("/Users/extra/RubymineProjects/goods_cards/app/assets/prices/Price_LM_10.05.2017.xlsx")
-  # workbook = RubyXL::Parser.parse('/Users/extra/RubymineProjects/goods_cards/app/assets/prices/Price_LM_10.05.2017.xlsx') # ("path/to/Excel/file.xlsx")
-  # worksheet = workbook[0]
-  # cell = worksheet[3][3]
-  # puts cell
-
   # def get_purchase_price
-  #   response = HTTP.follow.get('https://docs.google.com/spreadsheets/d/1oEZHsE-Wb3W4RLWu1Hewm9Xj4hj6_6eQ_NtbJCdwFUc/gviz/tq?tqx=out:csv&sheet=OrderLiquiMolySamara011116(13)')
-  #   response_price = HTTP.follow.get('https://docs.google.com/spreadsheets/d/1r-nchqB-LELEDhDz79s5yNJCAox8W2vo8Uo-E8H9Lio/gviz/tq?tqx=out:csv&sheet=1')
+  #   response = HTTP.follow.get('https://docs.google.com/spreadsheets/d/1ZbwCBXikzTbUstc0_by4fLAmSWiPQLrsUbi2UC3rWnw/gviz/tq?tqx=out:csv&sheet=1')
+  #   # response_price = HTTP.follow.get('https://docs.google.com/spreadsheets/d/1ZbwCBXikzTbUstc0_by4fLAmSWiPQLrsUbi2UC3rWnw/gviz/tq?tqx=out:csv&sheet=1')
   #   csv = CSV.parse(response.to_s)
   #   price = CSV.parse(response_price.to_s)
   #   puts price
   # end
+
   z = []
 
   def get_lm_product_data(product_id)
@@ -59,10 +42,12 @@
       page.css('.product-info span.price-new').first&.content&.gsub(/[^0-9\.]/, '')&.to_f,
       # Image (4)
       (page.css('a#zoom_link1').first[:href] unless page.css('a#zoom_link1').first.nil?),
-
+      # Weight
       page.css('#tab-attribute > table.attribute > tbody > tr:nth-last-child(1) > td:nth-child(2)').first&.content,
-      # Price (6)
-      page.css('.product-info .price').first&.content&.gsub(/[^0-9\.]/, '')&.to_f
+      # Old price (6)
+      page.css('.product-info .price').first&.content&.gsub(/[^0-9\.]/, '')&.to_f,
+
+      page.css('.infoleft')
 
     ]
   end
@@ -70,7 +55,7 @@
   def get_purchase_price(product_art)
     # Also supports csv, csvt and tsv formats
 
-    s = SimpleSpreadsheet::Workbook.read('/home/sproodigy/goods_cards/app/assets/prices/Price_LM_10.05.2017.xlsx')
+    s = SimpleSpreadsheet::Workbook.read('app/assets/prices/Price_LM_02.08.2017.xlsx')
     s.selected_sheet = s.sheets[0]
     s.first_row.upto(s.last_row) do |line|
       art_shen = s.cell(line, 4)
@@ -101,6 +86,12 @@
       end
     end
   end
+
+  # Read CSV files
+  # CSV.open('test.csv', 'r') do |row|
+  #   p row
+  # end
+
 
   def get_lm_product_image(product_id)
 
@@ -151,10 +142,9 @@
   #                                       }})
   # end
 
-  (0..2360).each do |product_id|
+  (0..10).each do |product_id|
     result = get_lm_product_data(product_id)
     next if result[0].nil?
-    # puts result[6]
 
     # if result[5] == /[a-zA-Zа-яА-Я]/
     #   weight = result[5].gsub(/[a-zA-Zа-яА-Я]/, '')
@@ -165,10 +155,18 @@
 
     barcode = barcode_from_product_art(result[0])
 
+    art_src = result[7].to_s
+    # if /[<span>Артикул:<\/span> 1007<br>]/.match(art_src) then art = art_src.gsub(/[^0-9]/) end
+    # puts art_src
+    # if /[0-9]/.match(result[7].to_a) then puts result[7] end
+
     price = result[3]
     if result[3] == nil then price = result[6] end
 
     purchase_price = get_purchase_price(result[0])
+
+    weight = result[5][0..-2].gsub(/[a-zA-Zа-яА-Я ]/, '') if /[a-zA-Zа-яА-Я]/.match(result[5])
+    next if weight.to_f > 20
 
     store_id = 3 # Avto-Raketa
 
@@ -177,12 +175,7 @@
       short_desc = data.last
       if short_desc.include?('</b>') then short_desc = short_desc.gsub(/<\/b>/, '') end
 
-      weight = result[5][0..-2].gsub(/[a-zA-Zа-яА-Я ]/, '') if /[a-zA-Zа-яА-Я]/.match(result[5])
-      next if weight.to_f > 20
-      # weight = short_desc.split(' ')[-2]
-      # next if weight.to_f > 20 && weight == nil
-
-      title = "Liqui Moly #{data.first} (art: #{result[0]})"
+      title = "Liqui Moly #{data.first} (#{weight} L) (art: #{result[0]})"
 
       sku_full = "lm_#{data.first.downcase.gsub(/-|[ ]/, '_')}_#{weight}"
     elsif
@@ -190,10 +183,7 @@
       data = result[2].partition(' - ')
       short_desc = data.last
 
-      weight = result[5][0..-2].gsub(/[a-zA-Zа-яА-Я ]/, '') if /[a-zA-Zа-яА-Я]/.match(result[5])
-      next if weight.to_f > 20
-
-      title = "Liqui Moly #{data.first} (art: #{result[0]})"
+      title = "Liqui Moly #{data.first} (#{weight} L) (art: #{result[0]})"
       sku_full = "lm_#{data.first.downcase.gsub(/-|[ ]/, '_')}_#{weight}"
     else
       short_desc = ''
@@ -212,9 +202,7 @@
         end
       end
 
-      weight = result[5][0..-2].gsub(/[a-zA-Zа-яА-Я ]/, '') if /[a-zA-Zа-яА-Я]/.match(result[5])
-      next if weight.to_f > 20
-      title = "Liqui Moly #{title_src}(art: #{result[0]})"
+      title = "Liqui Moly #{title_src} (#{weight} L) (art: #{result[0]})"
       sku_full = "lm_#{title_src.downcase.gsub(/-|[ ]/, '_')}_#{weight}"
 
     end
@@ -251,14 +239,14 @@
       sku_full
     end
 
-    z << ["weight: #{weight}", "purch_price: #{purchase_price}", "price: #{price}", "#{short_desc}:  #{short_desc.length}", title, "#{sku_full}:  #{sku_full.length}", '- - - - - - - - - - - - - -']
+    # z << ["weight: #{weight}", "purch_price: #{purchase_price}", "price: #{price}", "#{short_desc}:  #{short_desc.length}", title, "#{sku_full}:  #{sku_full.length}", '- - - - - - - - - - - - - -']
 
     case
-    when purchase_price.to_f <= 1
+    when purchase_price.to_f <= 40
       puts "purchase_price too small   #{result[0]}"
     when price.to_f < purchase_price.to_f
       puts "purchase_price too big   #{result[0]}"
-    when /[^0-9.,]/.match(purchase_price.to_s) && purchase_price == nil
+    when /[^0-9.,]/.match(purchase_price.to_s)
       puts "purchase_price is NAN   #{result[0]}"
     when /[^0-9.,]/.match(price.to_s) && price == nil
       puts "price is NAN   #{result[0]}"
@@ -271,6 +259,39 @@
     when sku_full.length > 32
       puts "sku_full.length > 32    #{result[0]}"
     end
+
+    array = Array.new { "#{weight}, #{purchase_price}, #{price}, #{barcode}, #{short_desc}, #{title}, #{sku_full}" }
+    # src << ["#{weight}, #{purchase_price}, #{price}, #{barcode}, #{short_desc}, #{title}, #{sku_full}"]
+    # puts src[1]
+    # csv_str = src.inject([]) { |csv, row|  csv << CSV.generate_line(row) }.join("")
+
+    File.open("test.csv", "w") {|f| f.write(array.inject([]) { |csv, row|  csv << CSV.generate_line(row) }.join(""))}
+
+
+    # puts src, src.class
+    # rowid = 0
+    # CSV.open(test.csv, 'w') do |csv|
+    #   hsh_ary.each do |hsh|
+    #     rowid += 1
+    #     if rowid == 1
+    #       csv << hsh.keys# adding header row (column labels)
+    #     else
+    #       csv << hsh.values
+    #     end# of if/else inside hsh
+    #   end# of hsh's (rows)
+    # end# of csv open
+
+
+    # csv = []
+    # CSV.open('test.csv', 'w') do |csv|
+    #   puts src.split.each do |row|
+    #     csv << row
+    #   end
+
+
+      # csv << ["#{weight}, #{purchase_price}, #{price}, #{barcode}, #{short_desc}, #{title}, #{sku_full}"]
+    # end
+
 
     # z << ["#{sku_full}:  #{sku_full.length}", '- - - - - - - - - - - - - -']
 
@@ -285,3 +306,6 @@
   end
 
   # puts z
+
+  # a = [['dkjfldj', 'djkfls'], ['djfieoi', 'eiocnx,n']]
+  # puts a[0]
