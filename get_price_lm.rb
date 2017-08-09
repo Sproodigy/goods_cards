@@ -1,4 +1,4 @@
-  # coding: utf-8
+  # encoding: utf-8
 
   # require 'axlsx'   # For create xlsx files
   require 'rubyXL'
@@ -141,6 +141,7 @@
   #                                        weight: weight
   #                                       }})
   # end
+  src_for_csv = []
 
   (0..10).each do |product_id|
     result = get_lm_product_data(product_id)
@@ -260,38 +261,7 @@
       puts "sku_full.length > 32    #{result[0]}"
     end
 
-    array = Array.new { "#{weight}, #{purchase_price}, #{price}, #{barcode}, #{short_desc}, #{title}, #{sku_full}" }
-    # src << ["#{weight}, #{purchase_price}, #{price}, #{barcode}, #{short_desc}, #{title}, #{sku_full}"]
-    # puts src[1]
-    # csv_str = src.inject([]) { |csv, row|  csv << CSV.generate_line(row) }.join("")
-
-    File.open("test.csv", "w") {|f| f.write(array.inject([]) { |csv, row|  csv << CSV.generate_line(row) }.join(""))}
-
-
-    # puts src, src.class
-    # rowid = 0
-    # CSV.open(test.csv, 'w') do |csv|
-    #   hsh_ary.each do |hsh|
-    #     rowid += 1
-    #     if rowid == 1
-    #       csv << hsh.keys# adding header row (column labels)
-    #     else
-    #       csv << hsh.values
-    #     end# of if/else inside hsh
-    #   end# of hsh's (rows)
-    # end# of csv open
-
-
-    # csv = []
-    # CSV.open('test.csv', 'w') do |csv|
-    #   puts src.split.each do |row|
-    #     csv << row
-    #   end
-
-
-      # csv << ["#{weight}, #{purchase_price}, #{price}, #{barcode}, #{short_desc}, #{title}, #{sku_full}"]
-    # end
-
+    src_for_csv << ["#{title}, #{short_desc}, #{sku_full}, #{barcode}, #{purchase_price}, #{price}, #{weight}"]
 
     # z << ["#{sku_full}:  #{sku_full.length}", '- - - - - - - - - - - - - -']
 
@@ -305,7 +275,13 @@
   #   # create_product(purchase_price, sku, barcode, store_id, price, short_desc, title, weight)
   end
 
-  # puts z
+  CSV.open('test.csv', 'w', encoding: "UTF-8", headers: true) do |csv|
+    csv << ['Title', 'Short_decription', 'SKU', 'Barcode', 'Purchase_price', 'Price', 'Weight']
+    src_for_csv.each do |row|
+      csv << row
+    end
+  end
 
-  # a = [['dkjfldj', 'djkfls'], ['djfieoi', 'eiocnx,n']]
-  # puts a[0]
+  CSV.foreach('test.csv', encoding: "UTF-8", headers: true) do |row|
+    puts row
+  end
