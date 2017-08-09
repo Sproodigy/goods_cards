@@ -1,4 +1,5 @@
 require 'active_support/all'
+require 'csv'
 
 # def name
 #   while true
@@ -120,12 +121,12 @@ class User
 
 end
 
-user = User.new('John', '123', 'sample@mail.ru')
-user = User.new('Smith', '456', 'another@mail.ru')
-user.just
+# user = User.new('John', '123', 'sample@mail.ru')
+# user = User.new('Smith', '456', 'another@mail.ru')
+# user.just
 # User.just
 
-puts user.user_data
+# puts user.user_data
 # p = Array.new( ( print "Введите размерность массива: " ; gets.to_i ) ){ |i|
 #   print "Введите #{i}-й элемент массива: " ; gets.to_f }
 # puts p
@@ -219,3 +220,17 @@ end
 #   # @angles = 9
 #   puts @@sides.to_s + ' Sides ' + @angles.to_s
 # end
+data1 = "ll;fk", "fjklsf"
+data2 = ["mmcmk, jkl;jfkl", "iiie-jlfs", "FFS;FSEE,GBB"]
+data3 = ["mmcmk, jkljfkl", "iiiejlfs", "FFSFSEEGBB"]
+
+
+CSV.open('test.csv', 'w') do |csv|
+    z = []
+    csv << data1
+    csv << data2
+    csv << data3
+    # csv << csv_string
+end
+
+# csv_string << ["#{title}", "#{short_desc}", "#{sku_full}", "#{barcode}", "#{weight}", "#{price}", "#{purchase_price}"].to_csv

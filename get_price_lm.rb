@@ -143,7 +143,7 @@
   # end
   src_for_csv = []
 
-  (0..10).each do |product_id|
+  (0..7).each do |product_id|
     result = get_lm_product_data(product_id)
     next if result[0].nil?
 
@@ -275,13 +275,44 @@
   #   # create_product(purchase_price, sku, barcode, store_id, price, short_desc, title, weight)
   end
 
-  CSV.open('test.csv', 'w', encoding: "UTF-8", headers: true) do |csv|
-    csv << ['Title', 'Short_decription', 'SKU', 'Barcode', 'Purchase_price', 'Price', 'Weight']
-    src_for_csv.each do |row|
+  header = ['Title', 'Short_decription', 'SKU', 'Barcode', 'Purchase_price', 'Price', 'Weight']
+  # CSV.open('test.csv', 'w', { encoding: "UTF-8", col_sep: ';', headers: false }) do |csv|
+  #
+  #   src_for_csv.each do |row|
+  #     csv << row
+  #     # puts csv.inspect
+  #
+  #   end
+  # end
+  #
+  # m = CSV.read('test.csv')
+  # puts m
+
+  m = CSV.read('test.csv')
+  m.each do |col|
+    col << 'skfjlskf'
+  end
+
+#
+  CSV.open('test.csv', 'w') do |csv|
+    m.each do |row|
       csv << row
     end
   end
+  # puts v.inspect
 
-  CSV.foreach('test.csv', encoding: "UTF-8", headers: true) do |row|
-    puts row
-  end
+  # CSV.foreach('test.csv') do |row|
+  #   puts row.inspect
+  # end
+
+  # a_string = "Dan,34\nMaria,55"
+  # CSV.parse(a_string) { |row| puts row.inspect}
+
+  #
+  # CSV.foreach('test.csv', encoding: "UTF-8", headers: true) do |row|   # Same as CSV.parse(a_string) { |row| puts row.inspect}
+  #   puts row
+  # end
+
+# Разбивает файл на отдельные строки-массивы.
+  # a = CSV.parse(File.read('test.csv'))  # Same as CSV.read('test.csv')
+  # puts a[2]
