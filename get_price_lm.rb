@@ -144,6 +144,7 @@
   src_for_csv = []
 
   (0..7).each do |product_id|
+
     result = get_lm_product_data(product_id)
     next if result[0].nil?
 
@@ -153,13 +154,9 @@
     # else
     #   ''
     # end
+    art = result[0]
 
     barcode = barcode_from_product_art(result[0])
-
-    art_src = result[7].to_s
-    # if /[<span>Артикул:<\/span> 1007<br>]/.match(art_src) then art = art_src.gsub(/[^0-9]/) end
-    # puts art_src
-    # if /[0-9]/.match(result[7].to_a) then puts result[7] end
 
     price = result[3]
     if result[3] == nil then price = result[6] end
@@ -176,7 +173,7 @@
       short_desc = data.last
       if short_desc.include?('</b>') then short_desc = short_desc.gsub(/<\/b>/, '') end
 
-      title = "Liqui Moly #{data.first} (#{weight} L) (art: #{result[0]})"
+      title = "Liqui Moly #{data.first} (#{weight} L) (art: #{art})"
 
       sku_full = "lm_#{data.first.downcase.gsub(/-|[ ]/, '_')}_#{weight}"
     elsif
@@ -184,7 +181,7 @@
       data = result[2].partition(' - ')
       short_desc = data.last
 
-      title = "Liqui Moly #{data.first} (#{weight} L) (art: #{result[0]})"
+      title = "Liqui Moly #{data.first} (#{weight} L) (art: #{art})"
       sku_full = "lm_#{data.first.downcase.gsub(/-|[ ]/, '_')}_#{weight}"
     else
       short_desc = ''
@@ -203,7 +200,7 @@
         end
       end
 
-      title = "Liqui Moly #{title_src} (#{weight} L) (art: #{result[0]})"
+      title = "Liqui Moly #{title_src} (#{weight} L) (art: #{art})"
       sku_full = "lm_#{title_src.downcase.gsub(/-|[ ]/, '_')}_#{weight}"
 
     end
@@ -244,24 +241,24 @@
 
     case
     when purchase_price.to_f <= 40
-      puts "purchase_price too small   #{result[0]}"
+      puts "purchase_price too small   #{art}"
     when price.to_f < purchase_price.to_f
-      puts "purchase_price too big   #{result[0]}"
+      puts "purchase_price too big   #{art}"
     when /[^0-9.,]/.match(purchase_price.to_s)
-      puts "purchase_price is NAN   #{result[0]}"
+      puts "purchase_price is NAN   #{art}"
     when /[^0-9.,]/.match(price.to_s) && price == nil
-      puts "price is NAN   #{result[0]}"
+      puts "price is NAN   #{art}"
     when /[^0-9.,]/.match(weight.to_s)
-      puts "weight is NAN   #{result[0]}"
+      puts "weight is NAN   #{art}"
     when weight.to_f > 20
-      puts "weight > 20    #{result[0]}"
+      puts "weight > 20    #{art}"
     when short_desc.length > 64
-      puts "short_desc.length > 64    #{result[0]}"
+      puts "short_desc.length > 64    #{art}"
     when sku_full.length > 32
-      puts "sku_full.length > 32    #{result[0]}"
+      puts "sku_full.length > 32    #{art}"
     end
 
-    src_for_csv << ["#{title}, #{short_desc}, #{sku_full}, #{barcode}, #{purchase_price}, #{price}, #{weight}"]
+    src_for_csv << ["#{art}", "#{title}", "#{short_desc}", "#{sku_full}", "#{barcode}", "#{purchase_price}", "#{price}", "#{weight}"]
 
     # z << ["#{sku_full}:  #{sku_full.length}", '- - - - - - - - - - - - - -']
 
@@ -274,31 +271,33 @@
   #   # puts put_lm_product_price(purchase_price, barcode, store_id, price, short_desc, title, weight)
   #   # create_product(purchase_price, sku, barcode, store_id, price, short_desc, title, weight)
   end
-
-  header = ['Title', 'Short_decription', 'SKU', 'Barcode', 'Purchase_price', 'Price', 'Weight']
-  # CSV.open('test.csv', 'w', { encoding: "UTF-8", col_sep: ';', headers: false }) do |csv|
   #
+  # header = ["Art", "Title", "Short description", "SKU", "Barcode", "Purchase price", "Price", "Weight"]
+  # CSV.open('test.csv', 'w', { encoding: "UTF-8", col_sep: ';', headers: true }) do |csv|
+  #   csv << header
   #   src_for_csv.each do |row|
   #     csv << row
-  #     # puts csv.inspect
-  #
+  #     puts csv.inspect
   #   end
   # end
   #
-  # m = CSV.read('test.csv')
-  # puts m
+  # m = CSV.read('test.csv', headers: true)
+  #   m.each do |row|
+  #     puts row[1], '= = = = = ='
+  #     puts row.to_a.inspect, '- - - - - - -'
+  #   end
 
-  m = CSV.read('test.csv')
-  m.each do |col|
-    col << 'skfjlskf'
+  m = CSV.foreach('test.csv', col_sep: ';', headers:true) do |row|
+      p row.inspect, '- - - - - - -'
+      p row, '= = = = = = = ='
   end
 
 #
-  CSV.open('test.csv', 'w') do |csv|
-    m.each do |row|
-      csv << row
-    end
-  end
+  # CSV.open('test.csv', 'w') do |csv|
+  #   m.each do |row|
+  #     csv << row
+  #   end
+  # end
   # puts v.inspect
 
   # CSV.foreach('test.csv') do |row|
