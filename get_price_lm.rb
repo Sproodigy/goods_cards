@@ -138,7 +138,7 @@
 
   src_for_csv = []
 
-  (0..30).each do |product_id|
+  (0..50).each do |product_id|
 
     result = get_lm_product_data(product_id)
     next if result[0].nil?
@@ -247,6 +247,18 @@
 
     src_for_csv << ["#{art}", "#{title}", "#{short_desc}", "#{sku_full}", "#{barcode}", "#{purchase_price}", "#{price}", "#{weight}"]
 
+# Save file from data
+  # header = ["Art", "Title", "Short description", "SKU", "Barcode", "Purchase price", "Price", "Weight"]
+  # CSV.open('test.csv', 'w', { encoding: "UTF-8", col_sep: ';', headers: true }) do |csv|
+  #   csv << header
+  #   src_for_csv.each do |row|
+  #     csv << row
+  #   end
+  # end
+
+
+
+
     # puts get_lm_product_data(product_id)[5]
 
     # puts "#{short_desc}==#{short_desc.length}:   #{result[0]}", title, "#{sku_full}:  " + "#{sku_full.length}", '----------------'
@@ -259,24 +271,27 @@
   end
 
 # To add a header, the columns should be written monotonously with the header (each data column separately).
-
-# Save file from data
-#   header = ["Art", "Title", "Short description", "SKU", "Barcode", "Purchase price", "Price", "Weight"]
-#   CSV.open('test.csv', 'w', { encoding: "UTF-8", col_sep: ';', headers: true }) do |csv|
-#     csv << header
-#     src_for_csv.each do |row|
-#       csv << row
-#     end
-#   end
-
 # Read file as individual rows, can translate it into an array (with a header representation) and string (without header representation).
-m = CSV.read('test.csv', col_sep: ';', headers: true)  # Same as CSV.parse(File.read('test.csv'))
-src_for_csv.each do |row|
-  m << row unless m['Art'].include?(row[0])
-end
-puts m
-    # m.delete('Name')   # Remove the column
-    # m.delete(0)   # Remove a row
+  m = CSV.read('test.csv', {col_sep: ';', headers: true})  # Same as CSV.parse(File.read('test.csv'))
+  src_for_csv.each do |row|
+    if m['Art'].include?(row[0])
+      next
+    else
+      m << row
+    end
+  end
+  puts m
+
+#     # m.delete('Name')   # Remove the column
+#     # m.delete(0)   # Remove a row
+#
+header = ["Art", "Title", "Short description", "SKU", "Barcode", "Purchase price", "Price", "Weight"]
+ CSV.open('test.csv', 'w', { encoding: "UTF-8", col_sep: ';', headers: true }) do |csv|
+   csv << header
+   m.each do |row|
+     csv << row
+   end
+ end
 
 # Read the file as individual columns.
   # m = CSV.foreach('test.csv', col_sep: ';', headers:true) do |col|   # Same as CSV.parse('test.csv') { |row| puts row.inspect}
