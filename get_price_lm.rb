@@ -108,107 +108,118 @@
   #                                       }})
   # end
   #
-  def create_product(purchase_price, sku, barcode, store_id, price, short_desc, title, weight)
-    page = HTTP.headers(authorization: "Token 69be0fb43ae944941c9aea1f12e16497").post("https://xp.extrapost.ru/api/v1/products/",
-                       json: {product: { purchase_price: purchase_price,
-                                         sku: sku,
-                                         barcode: barcode,
-                                         store_id: store_id,
-                                         price: price,
-                                         description: short_desc,
-                                         title: title,
-                                         weight: weight
-                                        }})
+  # def create_product(purchase_price, sku, barcode, store_id, price, short_desc, title, weight)
+  #   page = HTTP.headers(authorization: "Token 69be0fb43ae944941c9aea1f12e16497").post("https://xp.extrapost.ru/api/v1/products/",
+  #                      json: {product: { purchase_price: purchase_price,
+  #                                        sku: sku,
+  #                                        barcode: barcode,
+  #                                        store_id: store_id,
+  #                                        price: price,
+  #                                        description: short_desc,
+  #                                        title: title,
+  #                                        weight: weight
+  #                                       }})
+  # end
+
+  src_for_csv = []
+
+  def generate_sku_and_title(weight, art, product_id)
+    result = get_lm_product_data(product_id)
+    if result[2].include?(' — ')
+      data = result[2].partition(' — ')
+      @short_desc = data.last
+      # if short_desc.include?('</b>') then short_desc = short_desc.gsub(/<\/b>/, '') end
+      @sku_full = "lm_#{data.first.downcase.gsub(/-|[ ]/, '_')}_#{weight}"
+      @title = "Liqui Moly #{data.first} (#{weight} L) (art: #{art})"
+    elsif
+      result[2].include?(' - ')
+      data = result[2].partition(' - ')
+      @short_desc = data.last
+      @title = "Liqui Moly #{data.first} (#{weight} L) (art: #{art})"
+      @sku_full = "lm_#{data.first.downcase.gsub(/-|[ ]/, '_')}_#{weight}"
+    else
+      short_desc = ''
+      title_src = ''
+      data = result[2].split(' ') unless result[2].nil?
+      data.each do |word|
+        if /[А-Яа-я]/.match(word)
+          @short_desc = short_desc + word + ' '
+        else
+          /[a-zA-Z]/.match(word)
+          title_src = title_src + word + ' '
+        end
+        @sku_full = "lm_#{title_src.downcase.gsub(/-|[ ]/, '_')}_#{weight}"
+        @title = "Liqui Moly #{title_src} (#{weight} L) (art: #{art})"
+      end
+
+    if @short_desc.length > 64
+      data = @short_desc[0..63].split(' ')
+      data.pop
+      @short_desc = data.join(' ')
+    end
+
+      if @sku_full.length > 32
+          sku_full_part = @sku_full.gsub(/_/, ' ').split
+          sku_full_part_new = sku_full_part.map { |word| word.length >= 10 ? word = word[0..4] : word }
+          sku_full_part_new = "#{sku_full_part_new.join('_')}"
+          @sku_full = sku_full_part_new
+
+          if sku_full_part_new.length > 32
+              sku_part = sku_full_part_new.gsub(/_/, ' ').split
+              sku_part_new = sku_part.map { |word| word.length <= 9 && word.length >= 5 ? word = word[0..2] : word }
+              sku_part_new = "#{sku_part_new.join('_')}"
+              @sku_full = sku_part_new
+
+              if sku_part_new.length > 32
+                  sku_part_end = sku_part_new.gsub(/_/, ' ').split
+                  sku_part_end.delete_at(1)
+                  @sku_full = "#{sku_part_end.join('_')}"
+              else
+                @sku_full
+              end
+          else
+            @sku_full
+          end
+      else
+        @sku_full
+      end
+    end
   end
 
-  # src_for_csv = []
-  #
-  # (0..50).each do |product_id|
-  #
-  #   result = get_lm_product_data(product_id)
-  #   next if result[0].nil?
-  #
-  #   art = result[0]
-  #
-  #   barcode = barcode_from_product_art(result[0])
-  #
-  #   price = result[3]
-  #   if result[3] == nil then price = result[6] end
-  #
-  #   purchase_price = get_purchase_price(result[0])
-  #
-  #   weight = result[5][0..-2].gsub(/[a-zA-Zа-яА-Я ]/, '') if /[a-zA-Zа-яА-Я]/.match(result[5])
-  #   next if weight.to_f > 20
-  #
-  #   store_id = 3   # Avto-Raketa
-  #
-  #   if result[2].include?(' — ')
-  #     data = result[2].partition(' — ')
-  #     short_desc = data.last
-  #     if short_desc.include?('</b>') then short_desc = short_desc.gsub(/<\/b>/, '') end
-  #
-  #     title = "Liqui Moly #{data.first} (#{weight} L) (art: #{art})"
-  #
-  #     sku_full = "lm_#{data.first.downcase.gsub(/-|[ ]/, '_')}_#{weight}"
-  #   elsif
-  #     result[2].include?(' - ')
-  #     data = result[2].partition(' - ')
-  #     short_desc = data.last
-  #
-  #     title = "Liqui Moly #{data.first} (#{weight} L) (art: #{art})"
-  #     sku_full = "lm_#{data.first.downcase.gsub(/-|[ ]/, '_')}_#{weight}"
-  #   else
-  #     short_desc = ''
-  #     title_src = ''
-  #     data = result[2].split(' ') unless result[2].nil?
-  #
-  #     data.each do |word|
-  #       if /[А-Яа-я]/.match(word)
-  #         short_desc = short_desc + word + ' '
-  #       else
-  #         /[a-zA-Z]/.match(word)
-  #         title_src = title_src + word + ' '
-  #       end
-  #     end
-  #
-  #     title = "Liqui Moly #{title_src} (#{weight} L) (art: #{art})"
-  #     sku_full = "lm_#{title_src.downcase.gsub(/-|[ ]/, '_')}_#{weight}"
-  #
-  #   end
-  #
-  #   if short_desc.length > 64
-  #     data = short_desc[0..63].split(' ')
-  #     data.pop
-  #     short_desc = data.join(' ')
-  #   end
-  #
-  #   if sku_full.length > 32
-  #       sku_full_part = sku_full.gsub(/_/, ' ').split
-  #       sku_full_part_new = sku_full_part.map { |word| word.length >= 10 ? word = word[0..4] : word }
-  #       sku_full_part_new = "#{sku_full_part_new.join('_')}"
-  #       sku_full = sku_full_part_new
-  #
-  #       if sku_full_part_new.length > 32
-  #           sku_part = sku_full_part_new.gsub(/_/, ' ').split
-  #           sku_part_new = sku_part.map { |word| word.length <= 9 && word.length >= 5 ? word = word[0..2] : word }
-  #           sku_part_new = "#{sku_part_new.join('_')}"
-  #           sku_full = sku_part_new
-  #
-  #           if sku_part_new.length > 32
-  #               sku_part_end = sku_part_new.gsub(/_/, ' ').split
-  #               sku_part_end.delete_at(1)
-  #               sku_full = "#{sku_part_end.join('_')}"
-  #           else
-  #             sku_full
-  #           end
-  #       else
-  #         sku_full
-  #       end
-  #   else
-  #     sku_full
-  #   end
-  #
-  #   src_for_csv << ["#{art}", "#{title}", "#{short_desc}", "#{sku_full}", "#{barcode}", "#{purchase_price}", "#{price}", "#{weight}"]
+  (0..10).each do |product_id|
+
+    result = get_lm_product_data(product_id)
+    next if result[0].nil?
+
+    art = result[0]
+
+    barcode = barcode_from_product_art(result[0])
+
+    price = result[3]
+    if result[3] == nil then price = result[6] end
+
+    purchase_price = get_purchase_price(result[0])
+
+    weight = result[5][0..-2].gsub(/[a-zA-Zа-яА-Я ]/, '') if /[a-zA-Zа-яА-Я]/.match(result[5])
+    next if weight.to_f > 20
+
+    store_id = 3   # Avto-Raketa
+
+    generate_sku_and_title(weight, art, product_id)
+
+    title = @title
+
+    short_desc = @short_desc
+
+    sku_full = @sku_full
+
+    src_for_csv << ["#{art}", "#{title}", "#{short_desc}", "#{sku_full}", "#{barcode}", "#{purchase_price}", "#{price}", "#{weight}"]
+
+  end
+
+  puts src_for_csv, '--_-___--___'
+
+
   #
   #   case
   #   when purchase_price.to_f <= 40
@@ -228,7 +239,6 @@
   #   when sku_full.length > 32
   #     puts "sku_full.length > 32    #{art}"
   #   end
-
 
 # Save file from data
   # header = ["Art", "Title", "Short description", "SKU", "Barcode", "Purchase price", "Price", "Weight"]
@@ -261,18 +271,20 @@
 #    end
 #  end
 
+  def add_goods_to_extrapost
 # Read the file as individual columns.
-  CSV.foreach('test.csv', col_sep: ';', headers:true) do |col|   # Same as CSV.parse('test.csv') { |row| puts row.inspect}
-    art = col[0]
-    if art
-      title = col[1]
-      short_desc = col[2]
-      sku = col[3]
-      barcode = col[4]
-      purchase_price = col[5]
-      price = col[6]
-      weight = col[7]
-      store_id = 3
+    CSV.foreach('test.csv', col_sep: ';', headers:true) do |col|   # Same as CSV.parse('test.csv') { |row| puts row}
+      art = col[0]
+      if art
+        title = col[1]
+        short_desc = col[2]
+        sku = col[3]
+        barcode = col[4]
+        purchase_price = col[5]
+        price = col[6]
+        weight = col[7]
+        store_id = 3
+      end
     end
-    create_product(purchase_price, sku, barcode, store_id, price, short_desc, title, weight)
   end
+  # create_product(purchase_price, sku, barcode, store_id, price, short_desc, title, weight)
