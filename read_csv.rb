@@ -7,8 +7,9 @@ require 'csv'
   #   puts arr.to_s[0..6].gsub(/[^0-9]/, '').inspect, arr.to_s.class, ' = = = = = = = = = '
   # end
 
-  m = CSV.read('test.csv',col_sep: ';', headers: true)  # Same as CSV.parse(File.read('test.csv'))
-  puts m['Art']
+  m = CSV.foreach('test.csv',col_sep: ';', headers: true) do |col|  # Same as CSV.parse(File.read('test.csv'))
+    col['Art']
+  end
 
   # puts m
   # src_for_csv.each do |row|   # Array
