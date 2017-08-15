@@ -124,7 +124,7 @@ end
 
 
 
-src_for_csv = []
+@src_for_csv = []
 
 (0..50).each do |product_id|
   result = get_lm_product_data(product_id)
@@ -146,14 +146,18 @@ src_for_csv = []
 
   if result[2].include?(' — ')
     data = result[2].partition(' — ')
-    short_desc = data.last
+    short_desc = data.last.split
+    short_desc[-2, 2] = nil
+    short_desc = short_desc.compact!.join(' ') + '.'
     # if short_desc.include?('</b>') then short_desc = short_desc.gsub(/<\/b>/, '') end
     sku_full = "lm_#{data.first.downcase.gsub(/-|[ ]/, '_')}_#{weight}"
     title = "Liqui Moly #{data.first} (#{weight} L) (art: #{art})"
   elsif
     result[2].include?(' - ')
     data = result[2].partition(' - ')
-    short_desc = data.last
+    short_desc = data.last.split
+    short_desc[-2, 2] = nil
+    short_desc = short_desc.compact!.join(' ') + '.'
     title = "Liqui Moly #{data.first} (#{weight} L) (art: #{art})"
     sku_full = "lm_#{data.first.downcase.gsub(/-|[ ]/, '_')}_#{weight}"
   else
@@ -170,6 +174,7 @@ src_for_csv = []
       sku_full = "lm_#{title_src.downcase.gsub(/-|[ ]/, '_')}_#{weight}"
       title = "Liqui Moly #{title_src} (#{weight} L) (art: #{art})"
     end
+  end
 
   if short_desc.length > 64
     data = short_desc[0..63].split(' ')
@@ -177,103 +182,122 @@ src_for_csv = []
     short_desc = data.join(' ')
   end
 
-    if sku_full.length > 32
-        sku_full_part = sku_full.gsub(/_/, ' ').split
-        sku_full_part_new = sku_full_part.map { |word| word.length >= 10 ? word = word[0..4] : word }
-        sku_full_part_new = "#{sku_full_part_new.join('_')}"
-        sku_full = sku_full_part_new
+  if sku_full.length > 32
+      sku_full_part = sku_full.gsub(/_/, ' ').split
+      sku_full_part_new = sku_full_part.map { |word| word.length >= 10 ? word = word[0..4] : word }
+      sku_full_part_new = "#{sku_full_part_new.join('_')}"
+      sku_full = sku_full_part_new
 
-        if sku_full_part_new.length > 32
-            sku_part = sku_full_part_new.gsub(/_/, ' ').split
-            sku_part_new = sku_part.map { |word| word.length <= 9 && word.length >= 5 ? word = word[0..2] : word }
-            sku_part_new = "#{sku_part_new.join('_')}"
-            sku_full = sku_part_new
+      if sku_full_part_new.length > 32
+          sku_part = sku_full_part_new.gsub(/_/, ' ').split
+          sku_part_new = sku_part.map { |word| word.length <= 9 && word.length >= 5 ? word = word[0..2] : word }
+          sku_part_new = "#{sku_part_new.join('_')}"
+          sku_full = sku_part_new
 
-            if sku_part_new.length > 32
-                sku_part_end = sku_part_new.gsub(/_/, ' ').split
-                sku_part_end.delete_at(1)
-                sku_full = "#{sku_part_end.join('_')}"
-            else
-              sku_full
-            end
-        else
-          sku_full
-        end
-    else
-      sku_full
-    end
+          if sku_part_new.length > 32
+              sku_part_end = sku_part_new.gsub(/_/, ' ').split
+              sku_part_end.delete_at(1)
+              sku_full = "#{sku_part_end.join('_')}"
+          else
+            sku_full
+          end
+      else
+        sku_full
+      end
+  else
+    sku_full
   end
 
-  src_for_csv << ["#{art}", "#{title}", "#{short_desc}", "#{sku_full}", "#{barcode}", "#{purchase_price}", "#{price}", "#{weight}"]
+  @src_for_csv << ["#{art}", "#{title}", "#{short_desc}", "#{sku_full}", "#{barcode}", "#{purchase_price}", "#{price}", "#{weight}"]
 
-    case
-    when purchase_price.to_f <= 40
-      puts "purchase_price too small   #{art}"
-    when price.to_f < purchase_price.to_f
-      puts "purchase_price too big   #{art}"
-    when /[^0-9.,]/.match(purchase_price.to_s)
-      puts "purchase_price is NAN   #{art}"
-    when /[^0-9.,]/.match(price.to_s)
-      puts "price is NAN   #{art}"
-    when /[^0-9.,]/.match(weight.to_s)
-      puts "weight is NAN   #{art}"
-    when weight.to_f > 20
-      puts "weight > 20    #{art}"
-    when short_desc.length > 64
-      puts "short_desc.length > 64    #{art}"
-    when sku_full.length > 32
-      puts "sku_full.length > 32    #{art}"
-    end
+  case
+  when purchase_price.to_f <= 40
+    puts "purchase_price too small   #{art}"
+  when price.to_f < purchase_price.to_f
+    puts "purchase_price too big   #{art}"
+  when /[^0-9.,]/.match(purchase_price.to_s)
+    puts "purchase_price is NAN   #{art}"
+  when /[^0-9.,]/.match(price.to_s)
+    puts "price is NAN   #{art}"
+  when /[^0-9.,]/.match(weight.to_s)
+    puts "weight is NAN   #{art}"
+  when weight.to_f > 20
+    puts "weight > 20    #{art}"
+  when short_desc.length > 64
+    puts "short_desc.length > 64    #{art}"
+  when sku_full.length > 32
+    puts "sku_full.length > 32    #{art}"
+  end
 
 end
 
-puts '--_-___--___', src_for_csv
-
-# Save file from data
-# header = ["Art", "Title", "Short description", "SKU", "Barcode", "Purchase price", "Price", "Weight"]
-# CSV.open('test.csv', 'w', { encoding: "UTF-8", col_sep: ';', headers: true }) do |csv|
-#   csv << header
-#   @src_for_csv.each do |row|
-#     csv << row
-#   end
-# end
-# end
+# puts '--_-___--___', @src_for_csv
+private
 
 # To add a header, the columns should be written monotonously with the header (each data column separately).
-# Read file as individual rows, can translate it into an array (with a header representation) and string (without header representation).
-# m = CSV.read('test.csv', {col_sep: ';', headers: true})  # Same as CSV.parse(File.read('test.csv'))
-# @src_for_csv.each do |row|
-#   if m['Art'].include?(row[0])
-#     next
-#   else
-#     m << row
-#   end
-# end
-# m.delete('Name')   # Remove the column
-# m.delete(0)   # Remove a row
 
-# header = ["Art", "Title", "Short description", "SKU", "Barcode", "Purchase price", "Price", "Weight"]
-#  CSV.open('test.csv', 'w', { encoding: "UTF-8", col_sep: ';', headers: true }) do |csv|
-#    csv << header
-#    m.each do |row|
-#      csv << row
-#    end
-#  end
-
-def add_goods_to_extrapost
-# Read the file as individual columns.
-  CSV.foreach('test.csv', {col_sep: ';', headers:true}) do |col|   # Same as CSV.parse('test.csv') { |row| puts row}
-    art = col[0]
-    if art
-      title = col[1]
-      short_desc = col[2]
-      sku = col[3]
-      barcode = col[4]
-      purchase_price = col[5]
-      price = col[6]
-      weight = col[7]
-      store_id = 3
+# The method is used once for one file.
+def save_new_file
+  header = ["Art", "Title", "Short description", "SKU", "Barcode", "Purchase price", "Price", "Weight"]
+  CSV.open('test.csv', 'w', { encoding: "UTF-8", col_sep: ';', headers: true }) do |csv|
+    csv << header
+    @src_for_csv.sort.each do |row|
+      csv << row
     end
   end
 end
-# create_product(purchase_price, sku, barcode, store_id, price, short_desc, title, weight)
+# save_new_file
+
+# Read file as individual rows, can translate it into an array (with a header representation) and string (without header representation).
+# table.delete('Name') - Remove the column
+# table.delete(0) - Remove a row
+def add_new_products
+  table = CSV.read('test.csv', { encoding: "UTF-8", col_sep: ';', headers: true })  # Same as CSV.parse(File.read('test.csv'))
+  @src_for_csv.sort.each do |row|
+    if table['Art'].include?(row[0])
+      next
+    else
+      table << row
+    end
+  end
+
+  header = ["Art", "Title", "Short description", "SKU", "Barcode", "Purchase price", "Price", "Weight"]
+   CSV.open('test.csv', 'w', { encoding: "UTF-8", col_sep: ';', headers: true }) do |csv|
+     csv << header
+     table.each do |row|
+       csv << row
+     end
+   end
+
+# Sorting lines in a file by art
+  data = CSV.read('test.csv', { encoding: "UTF-8", col_sep: ';' }).to_a.sort
+  data.pop
+
+  header = ["Art", "Title", "Short description", "SKU", "Barcode", "Purchase price", "Price", "Weight"]
+   CSV.open('test.csv', 'w', { encoding: "UTF-8", col_sep: ';', headers: true }) do |csv|
+     csv << header
+     data.each do |row|
+       csv << row
+     end
+   end
+end
+add_new_products
+
+# def add_goods_to_extrapost
+# # Read the file as individual columns.
+#   CSV.foreach('test.csv', {col_sep: ';', headers:true}) do |col|   # Same as CSV.parse('test.csv') { |row| puts row}
+#     art = col[0]
+#     if art
+#       title = col[1]
+#       short_desc = col[2]
+#       sku = col[3]
+#       barcode = col[4]
+#       purchase_price = col[5]
+#       price = col[6]
+#       weight = col[7]
+#       store_id = 3
+      # create_product(purchase_price, sku, barcode, store_id, price, short_desc, title, weight)
+#     end
+#   end
+# end
+# add_goods_to_extrapost
