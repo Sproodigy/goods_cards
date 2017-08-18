@@ -1,16 +1,2 @@
 Art;Title;Short description;SKU;Barcode;Purchase price;Price;Weight
 1007;Liqui Moly GearProtect (0.08 L) (art: 1007);Средство для долговременной защиты трансмиссий.;lm_gearprotect_0.08;4100420010071;2043.0;2493.0;0.08
-1042;Liqui Moly Getriebeoil-Verlust-Stop (0.05 L) (art: 1042);Средство для остановки течи трансмиссионного масла.;lm_getriebeoil_verlust_stop_0.05;4100420010422;520.0;635.0;0.05
-1107;Liqui Moly Hydraulikoil HLP 32 (20 L) (art: 1107);Минеральное гидравлическое масло.;lm_hydraulikoil_hlp_32_20;4100420011078;5229.0;6380.0;20
-1110;Liqui Moly Hydraulikoil HLP 46 (20 L) (art: 1110);Минеральное гидравлическое масло.;lm_hydraulikoil_hlp_46_20;4100420011108;5333.0;6507.0;20
-1150;Liqui Moly Synthoil Longtime Plus 0W-30 (1 L) (art: 1150);Синтетическое моторное масло.;lm_syn_lon_plus_0w_30_1;4100420011504;1095.0;1336.0;1
-1151;Liqui Moly Synthoil Longtime Plus 0W-30 (5 L) (art: 1151);Синтетическое моторное масло.;lm_syn_lon_plus_0w_30_5;4100420011511;5210.0;6357.0;5
-1172;Liqui Moly Synthoil Longtime 0W-30 (5 L) (art: 1172);Синтетическое моторное масло.;lm_synthoil_longtime_0w_30_5;4100420011726;3719.0;4538.0;5
-1280;Liqui Moly Sage-Kettenoil (1 L) (art: 1280);Био-масло для цепей бензопил.;lm_sage_kettenoil_1;4100420012808;470.0;574.0;1
-1420;Liqui Moly Motor Innenkonservierer (0.3 L) (art: 1420);Внутренний консервант двигателя.;lm_motor_innenkonservierer_0.3;4100420014208;520.0;635.0;0.3
-3958;Liqui Moly 2-Takt-Motoroil (1 L) (art: 3958);Полусинтетическое моторное масло для 2-тактных двигателей.;lm_2_takt_motoroil_1;4100420039584;442.0;540.0;1
-3978;Liqui Moly Zentralhydraulik-Oil (1 L) (art: 3978);Синтетическая гидравлическая жидкость.;lm_zentralhydraulik_oil_1;4100420039782;985.0;1202.0;1
-3990;Liqui Moly Motorbike 2T Synth Scooter Street Race (1 L) (art: 3990);Синтетическое моторное масло для скутеров.;lm_mot_2t_syn_sco_str_race_1;4100420039904;751.0;917.0;1
-7563;Liqui Moly Longtime High Tech 5W-30 (1 L) (art: 7563);НС-синтетическое моторное масло.;lm_longtime_high_tech_5w_30_1;4100420075636;1;0.0;1
-8036;Liqui Moly 2-Takt-Motoroil (0.25 L) (art: 8036);Полусинтетическое моторное масло для 2-тактных двигателей.;lm_2_takt_motoroil_0.25;4100420080364;256.0;313.0;0.25
-8976;Liqui Moly Synthoil Longtime 0W-30 (1 L) (art: 8976);Синтетическое моторное масло.;lm_synthoil_longtime_0w_30_1;4100420089763;792.0;967.0;1

@@ -91,35 +91,35 @@ class Sequence
 end
 
 
-class User
-  @@users_count = 0
-
-  def initialize(login, password, email)
-    @id       = @@users_count += 1
-    @login    = login
-    @password = password
-    @email    = email
-  end
-
-  def user_data
-    @user_data ||=
-    {
-      id: @id,
-      login: @login,
-      password: @password,
-      email: @email
-    }
-  end
-
-  def just
-    puts 'Just an inscription'
-  end
-
-  def self.users_count
-    @@users_count
-  end
-
-end
+# class User
+#   @@users_count = 0
+#
+#   def initialize(login, password, email)
+#     @id       = @@users_count += 1
+#     @login    = login
+#     @password = password
+#     @email    = email
+#   end
+#
+#   def user_data
+#     @user_data ||=
+#     {
+#       id: @id,
+#       login: @login,
+#       password: @password,
+#       email: @email
+#     }
+#   end
+#
+#   def just
+#     puts 'Just an inscription'
+#   end
+#
+#   def self.users_count
+#     @@users_count
+#   end
+#
+# end
 
 # user = User.new('John', '123', 'sample@mail.ru')
 # user = User.new('Smith', '456', 'another@mail.ru')
@@ -140,26 +140,96 @@ end
     # Dragon.count
 
 
-class Range
-  def by(step)
-    x = self.begin
+class Ranged
+  def by(start, step)
+    start = self.begin
     if exclude_end?
-      while x < self.end
-        yield x
-        x += step
+      while start < self.end
+        yield start
+        start += step
       end
     else
-      while x <=self.end
-        yield x
-        x += step
+      while start <= self.end
+        yield start
+        start += step
       end
     end
   end
 
-    # (0..40).by(10) do |d|
-    #   p d
-    # end
+  # (0..40).by(10) do |d|
+  #   p d
+  # end
+
 end
+
+def doSelfImportantly (proct)
+  puts 'Everybody just HOLD ON!  I have something to do...'
+  proct.call
+  puts 'Ok everyone, I\'m done.  Go on with what you were doing.'
+end
+
+sayHello = Proc.new do
+  puts 'hello'
+end
+
+sayGoodbye = Proc.new do
+  puts 'goodbye'
+end
+
+
+
+def maybeDo someProc
+  if rand(2) == 0
+    someProc.call
+  end
+end
+
+def twiceDo someProc
+  someProc.call
+  someProc.call
+end
+
+wink = Proc.new do
+  puts '<wink>'
+end
+
+glance = Proc.new do
+  while rand(4) == 3
+    puts '<glance>'
+  end
+end
+
+def doUntilFalse firstInput, someProc
+  input  = firstInput
+  output = firstInput
+
+  while output
+    input  = output
+    output = someProc.call input
+  end
+
+  input
+end
+
+buildArrayOfSquares = Proc.new do |array|
+  lastNumber = array.last
+  if lastNumber <= 0
+    false
+  else
+    array.pop                         # Take off the last number...
+    array.push lastNumber*lastNumber  # ...and replace it with its square...
+    array.push lastNumber-1           # ...followed by the next smaller number.
+  end
+end
+
+alwaysFalse = Proc.new do |justIgnoreMe|
+  false
+end
+
+puts doUntilFalse([5], buildArrayOfSquares).inspect
+puts doUntilFalse('I\'m writing this at 3:00 am; someone knock me out!', alwaysFalse)
+
+# Ranged.new
 
 # weirdHash = Hash.new
 #
@@ -220,17 +290,3 @@ end
 #   # @angles = 9
 #   puts @@sides.to_s + ' Sides ' + @angles.to_s
 # end
-data1 = "ll;fk", "fjklsf"
-data2 = ["mmcmk, jkl;jfkl", "iiie-jlfs", "FFS;FSEE,GBB"]
-data3 = ["mmcmk, jkljfkl", "iiiejlfs", "FFSFSEEGBB"]
-
-
-CSV.open('test.csv', 'w') do |csv|
-    z = []
-    csv << data1
-    csv << data2
-    csv << data3
-    # csv << csv_string
-end
-
-# csv_string << ["#{title}", "#{short_desc}", "#{sku_full}", "#{barcode}", "#{weight}", "#{price}", "#{purchase_price}"].to_csv
