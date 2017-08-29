@@ -226,67 +226,44 @@ alwaysFalse = Proc.new do |justIgnoreMe|
   false
 end
 
-puts doUntilFalse([5], buildArrayOfSquares).inspect
-puts doUntilFalse('I\'m writing this at 3:00 am; someone knock me out!', alwaysFalse)
+# puts doUntilFalse([5], buildArrayOfSquares).inspect
 
-# Ranged.new
+def compose proc1, proc2
+  Proc.new do |x|
+    proc2.call(proc1.call(x))
+  end
+end
 
-# weirdHash = Hash.new
-#
-# weirdHash = {monkeys: 12}
-# weirdHash['rats'] = 8
-# weirdHash['cats'] = 8
-# weirdHash['space'] = 0
-# weirdHash['birds'] = 8
-# weirdHash = weirdHash.to_a
-# weirdHash.each do |k|
-#   if k[1] = 8
-#     puts "Caught you (#{k})"
-#   end
-#   puts k
-# end
+squareIt = Proc.new do |x|
+  x * x
+end
 
-# class Die  #  игральная кость
-#   def roll
-#     @numberShowing = 1 + rand(6)
-#   end
-#
-#   def showing
-#     @numberShowing
-#   end
-#
-# end
-#
-# die = Die.new
-# die.roll
-# puts die.showing
-# puts die.showing
-# die.roll
-# puts die.showing
-# puts die.showing
+doubleIt = Proc.new do |x|
+  x + x
+end
 
+doubleThenSquare = compose doubleIt, squareIt
+squareThenDouble = compose squareIt, doubleIt
 
-#
-# class Polygon
-#   def self.sides
-#     @@sides
-#   end
-#
-#   def self.angles
-#     @angles
-#   end
-#
-#   @@sides = 8
-#   @angles = 7
-#
-#   puts @angles.to_s + ' Angles'
-# end
-#
-# puts @angles.to_s + ' Angles'
-#
-# puts Polygon.sides
-#
-# class Triangle < Polygon
-#   # @angles = 9
-#   puts @@sides.to_s + ' Sides ' + @angles.to_s
-# end
+# puts doubleThenSquare.call(5)
+# puts squareThenDouble.call(5)
+# @@sides = 6
+
+class Polygon
+  def self.sides
+    @@sides
+  end
+
+  def self.angles
+    @angles
+  end
+
+  @@sides = 8
+  @angles = 7
+
+  puts @angles.to_s + ' Angles'
+end
+
+class Triangle < Polygon
+  # puts @@sides.to_s + ' Sides '
+end

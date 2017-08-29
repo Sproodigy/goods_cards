@@ -17,29 +17,29 @@
   require 'active_support/core_ext/string/access'
 
   def get_lm_product_data(product_id)
-  # Load page html and parse it with Nokogiri
+# Load page html and parse it with Nokogiri
     page = Nokogiri::HTML(HTTP.follow.get("http://www.lm-shop.ru/index.php?route=product/product&product_id=#{product_id}").to_s)
-  # Select html element from page and print it
+# Select html element from page and print it
     [
-  # Art (0)
+# Art (0)
       page.css('#tab-attribute > table.attribute > tbody > tr:nth-last-child(2) > td:nth-child(2)').first&.content,
-  # Full description (1)
+# Full description (1)
       page.css('.product-description').first&.content,
-  # Name, short decription and volume (2)
+# Name, short decription and volume (2)
       (page.css('.product-info h1').first&.content unless page.css('.product-info h1').first&.content.nil?),
-  # New price (3)
+# New price (3)
       page.css('.product-info span.price-new').first&.content&.gsub(/[^0-9\.]/, '')&.to_f,
-  # Image (4)
+# Image (4)
       (page.css('a#zoom_link1').first[:href] unless page.css('a#zoom_link1').first.nil?),
-  # Weight
+# Weight
       page.css('#tab-attribute > table.attribute > tbody > tr:nth-last-child(1) > td:nth-child(2)').first&.content,
-  # Old price (6)
+# Old price (6)
       page.css('.product-info .price').first&.content&.gsub(/[^0-9\.]/, '')&.to_f
     ]
   end
 
   def get_purchase_price(product_art)
-  # Also supports csv, csvt and tsv formats
+# Also supports csv, csvt and tsv formats
     s = SimpleSpreadsheet::Workbook.read('app/assets/prices/Price_LM_02.08.2017.xlsx')
     s.selected_sheet = s.sheets[0]
     s.first_row.upto(s.last_row) do |line|
@@ -107,25 +107,25 @@
   #                                       }})
   # end
   #
-  # def create_product(purchase_price, sku, barcode, store_id, price, short_desc, title, weight)
-  #   page = HTTP.headers(authorization: "Token 69be0fb43ae944941c9aea1f12e16497").post("https://xp.extrapost.ru/api/v1/products/",
-  #                      json: {product: { purchase_price: purchase_price,
-  #                                        sku: sku,
-  #                                        barcode: barcode,
-  #                                        store_id: store_id,
-  #                                        price: price,
-  #                                        description: short_desc,
-  #                                        title: title,
-  #                                        weight: weight
-  #                                       }})
-  # end
+  def create_product(purchase_price, sku, barcode, store_id, price, short_desc, title, weight)
+    page = HTTP.headers(authorization: "Token 69be0fb43ae944941c9aea1f12e16497").post("https://xp.extrapost.ru/api/v1/products/",
+                       json: {product: { purchase_price: purchase_price,
+                                         sku: sku,
+                                         barcode: barcode,
+                                         store_id: store_id,
+                                         price: price,
+                                         description: short_desc,
+                                         title: title,
+                                         weight: weight
+                                        }})
+  end
 
 
 
 
   @src_for_csv = []
 
-  (0..20).each do |product_id|
+  (0..10).each do |product_id|
     result = get_lm_product_data(product_id)
     next if result[0].nil?
 
@@ -207,7 +207,7 @@
       sku_full
     end
 
-    @src_for_csv << ["#{art}", "#{title}          ", "#{short_desc}", "#{sku_full}", "#{barcode}", "#{purchase_price}", "#{price}", "#{weight}"]
+    @src_for_csv << ["#{art}", "#{title}", "#{short_desc}", "#{sku_full}", "#{barcode}", "#{purchase_price}", "#{price}", "#{weight}"]
 
     case
     when purchase_price.to_f <= 40
@@ -230,8 +230,6 @@
 
   end
 
-  private
-
   # To add a header, the columns should be written monotonously with the header (each data column separately).
 
   # The method is used once for one file.
@@ -246,9 +244,9 @@
   end
   # save_new_file
 
-  # Read file as individual rows, can translate it into an array (with a header representation) and string (without header representation).
-  # table.delete('Name') - Remove the column
-  # table.delete(0) - Remove a row
+# Read file as individual rows, can translate it into an array (with a header representation) and string (without header representation).
+# table.delete('Name') - Remove the column
+# table.delete(0) - Remove a row
   def add_new_products
     table = CSV.read('Price_LM.csv', { encoding: "UTF-8", col_sep: ';', headers: true })  # Same as CSV.parse(File.read('Price_LM.csv'))
     @src_for_csv.sort.each do |row|
@@ -267,7 +265,7 @@
        end
      end
 
-  # Sorting rows in a file by art
+# Sorting rows in a file by art
     data = CSV.read('Price_LM.csv', { encoding: "UTF-8", col_sep: ';' }).to_a.sort
     data.pop
 
@@ -279,23 +277,22 @@
        end
      end
   end
-  add_new_products
+  # add_new_products
 
-  # def add_goods_to_extrapost
-  # Read the file as individual columns.
-    # CSV.foreach('Price_LM.csv', {col_sep: ';', headers:true}) do |col|   # Same as CSV.parse('Price_LM.csv') { |row| puts row}
-    #   art = col[0]
-    #   if art
-    #     title = col[1]
-    #     short_desc = col[2]
-    #     sku = col[3]
-    #     barcode = col[4]
-    #     purchase_price = col[5]
-    #     price = col[6]
-    #     weight = col[7]
-    #     store_id = 3
-    #   end
-    # end
-    # create_product(purchase_price, sku, barcode, store_id, price, short_desc, title, weight)
-    # add_goods_to_extrapost
-  # end
+#   def add_goods_to_extrapost
+# # Read the file as individual columns.
+#     CSV.foreach('Price_LM.csv', {col_sep: ';', headers:true}) do |col|   # Same as CSV.parse('Price_LM.csv') { |row| puts row}
+#       art = col[0]
+#       if art
+#         title = col[1]
+#         short_desc = col[2]
+#         sku = col[3]
+#         barcode = col[4]
+#         purchase_price = col[5]
+#         price = col[6]
+#         weight = col[7]
+#         store_id = 3
+#       end
+#     end
+#     # create_product(purchase_price, sku, barcode, store_id, price, short_desc, title, weight)
+#   end
