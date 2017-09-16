@@ -63,15 +63,19 @@
   # Also supports csv, csvt and tsv formats
     s = SimpleSpreadsheet::Workbook.read('app/assets/prices/Price_LM_02.08.2017.xlsx')
     s.selected_sheet = s.sheets[0]
+    data = []
     s.first_row.upto(s.last_row) do |line|
-      art_shen = s.cell(line, 4)
-      pur_price = s.cell(line, 8)
+      art_shen = s.cell(line, 4).to_s
+      pur_price = s.cell(line, 8).to_s
       data_1 = Hash.new
       data_2 = Hash.new
       data_3 = Hash.new
 
       next if art_shen == nil
       next if /[^0-9\/*]/.match(art_shen.to_s)
+      @z = data << art_shen
+      # puts @z.sort
+
 
       if art_shen.to_s.include?('/')
         double_art = art_shen.to_s.gsub(/[\/]/, ' ').partition(' ')
@@ -191,21 +195,58 @@
 
   # @src_for_csv = []
   art_count = []
+  start = Time.now
 
-  (1007..1007).each do |product_id|   # Art from 1007 to 77169
+  (369..369).each do |product_id|   # Art from 1007 to 77169
 
     end_date = get_lm_product_data_liquimoly_ru(product_id)
     next if end_date[0].nil?
     art = end_date[0].rpartition(' ').last
     art_count << art
 
-    weight = end_date[5].split(' ')[-2]
-
     if end_date[5].include?('шт')
-      weight = 0.1
+      weight = ' (' + 0.1.to_s + ' кг)'
+    else
+      weight = ' (' + end_date[5].split(' ')[-2] + ' л)'
     end
 
-    short_desc = end_date[3].gsub(/[^А-Яа-я]/, ' ').rstrip.lstrip + '.'
+    if /[0-9]-[A-Z]/.match(end_date[3])
+      data = end_date[3].partition(/[0-9]-[A-Z]/)
+      short_desc = data[0].to_s.lstrip.rstrip.squeeze(" ") + '.'
+      @title = data[1..data.length].join.squeeze(" ") + weight + " (art: #{art})"
+    elsif /[A-Z0-9]-[A-Z]/.match(end_date[3])
+      data = end_date[3].partition(/[A-Z]/)
+      short_desc = data[0].to_s.rstrip.lstrip.squeeze(" ") + '.'
+      @title = data[1..data.length].join.squeeze(" ") + weight + " (art: #{art})"
+    else
+      data = end_date[3].partition(/[A-Z]/)
+      short_desc = data[0].to_s.rstrip.lstrip.squeeze(" ") + '.'
+      @title = data[1..data.length].join.squeeze(" ") + weight + " (art: #{art})"
+    end
+
+    # if /[0-9]/.match(end_date[3])
+    #   short_desc = /.+[А-Яа-я0-9]-.+[А-Яа-я]/.match(end_date[3]).to_s + '.'
+    #   if short_desc == '.'
+    #     short_desc = end_date[3].gsub(/[^А-Яа-я ( ) . "]/, ' ').rstrip.squeeze(" ") + '.'
+    #   end
+    #
+    #   title_data = end_date[3].split
+    #   data_array = []
+    #   title_data.each do |name|
+    #     if /[A-Za-z0-9]/.match(name)
+    #       title_data = data_array << name
+    #       @title ='Liqui Moly ' + title_data.join(' ').squeeze(" ") + " (#{weight} л)" + " (art: #{art})"
+    #     end
+    #   end
+    # else
+    #   short_desc = end_date[3].gsub(/[^А-Яа-я ( ) . "]/, ' ').rstrip.squeeze(" ") + '.'
+    #   @title ='Liqui Moly ' + end_date[3].gsub(/[А-Яа-я ( ) . "]/, ' ').lstrip.squeeze(" ") + " (#{weight} л)" + " (art: #{art})"
+    # end
+
+    case
+    when short_desc.length > 64
+      puts "short_desc length > 64    #{art}"
+    end
 
     if short_desc.length > 64   # For Extrastore
       data = short_desc[0..63].split(' ')
@@ -213,15 +254,13 @@
       short_desc = data.join(' ').rstrip + '.'
     end
 
-    if short_desc.include?('масло')   # For Extrastore
-      category_ids = [1206]
-    elsif short_desc.include?('салфетки')
-      category_ids = [1277]
-    else
-      category_ids = [1201]
-    end
-
-    @title ='Liqui Moly ' + end_date[3].gsub(/[А-Яа-я]/, ' ').lstrip.rstrip + " (#{weight} кг)" + " (art: #{art})"
+    # if short_desc.include?('масло')   # For Extrastore
+    #   category_ids = [1206]
+    # elsif short_desc.include?('салфетки')
+    #   category_ids = [1277]
+    # else
+    #   category_ids = [1201]
+    # end
 
     get_lm_product_image(product_id)
     filename = @title.gsub(/ /, '_') + @content_type_data
@@ -236,6 +275,7 @@
     sku = barcode
 
     purch_price = get_purchase_price(art)   # For Extrapost
+    next if purch_price <= 30
 
     price = (purch_price * 1.356).round
 
@@ -249,7 +289,7 @@
 
     availability = 'on_demand'   # For Extrastore
 
-    # puts weight, short_desc, title, filename, barcode, purch_price, price, old_price
+    puts short_desc, title, '- - - - - - -'
 
     case
     when /[^0-9]/.match(barcode)
@@ -268,13 +308,12 @@
       puts "purchase_price is NAN   #{art}"
     when /[^0-9.,]/.match(price.to_s)
       puts "price is NAN   #{art}"
-    when /[^0-9.,]/.match(weight.to_s)
-      puts weight.to_s + " weight is NAN   #{art}"
-    when short_desc.length > 64
-      puts "short_desc length > 64    #{art}"
     end
   end
+
   puts 'Number of goods:   ' + "#{art_count.size}", '- - - - -'
+  finish = Time.now
+  puts (finish - start).round.to_s + ' sec'
 
     # result = get_lm_product_data(product_id)
     # next if result[0].nil?
