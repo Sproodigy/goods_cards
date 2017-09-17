@@ -129,25 +129,9 @@
 
                              # sku пока использовать только при создании новых товаров.
 
-  def update_product_extrapost(sku, purchase_price, barcode, store_id, price, short_desc, title, weight, image, filename, country_of_origin)
-    page = HTTP.headers(authorization: "Token e541dfef128f4f93cbdb09b320ea3fb7").put("https://xp.extrapost.ru/api/v1/products/#{barcode}",
-                        json: {product: {purchase_price: purchase_price,
-                                         sku: sku,
-                                         barcode: barcode,
-                                         store_id: store_id,
-                                         price: price,
-                                         description: short_desc,
-                                         title: title,
-                                         weight: weight,
-                                         image: image,
-                                         image_file_name: filename,
-                                         country_of_origin: country_of_origin
-                                        }})
-  end
-
-  def create_product_extrapost(purchase_price, sku, barcode, store_id, price, short_desc, title, weight, image, filename, country_of_origin)
+  def create_product_extrapost(purch_price, sku, barcode, store_id, price, short_desc, title, weight, image, filename, country_of_origin)
     page = HTTP.headers(authorization: "Token e541dfef128f4f93cbdb09b320ea3fb7").post("https://xp.extrapost.ru/api/v1/products/",
-                       json: {product: { purchase_price: purchase_price,
+                       json: {product: { purchase_price: purch_price,
                                          sku: sku,
                                          barcode: barcode,
                                          store_id: store_id,
@@ -161,7 +145,23 @@
                                         }})
   end
 
-  def create_product_extrastore(sku, price, short_desc, title, image, filename, full_desc, store_ids, category_ids, availability, old_price)
+  def update_product_extrapost(sku, purch_price, barcode, store_id, price, short_desc, title, weight, image, filename, country_of_origin)
+    page = HTTP.headers(authorization: "Token e541dfef128f4f93cbdb09b320ea3fb7").put("https://xp.extrapost.ru/api/v1/products/#{barcode}",
+                        json: {product: {purchase_price: purch_price,
+                                         sku: sku,
+                                         barcode: barcode,
+                                         store_id: store_id,
+                                         price: price,
+                                         description: short_desc,
+                                         title: title,
+                                         weight: weight,
+                                         image: image,
+                                         image_file_name: filename,
+                                         country_of_origin: country_of_origin
+                                        }})
+  end
+
+  def create_product_extrastore(sku, price, short_desc, title, image, filename, full_desc, store_ids, category_ids, availability, old_price, yandex_market_export)
     page = HTTP.headers(authorization: "Token $2a$10$h1Of14AYJkYa5kpiKJTQ7uw/r96shHcgswG/J6rcuaQJAtgFLpjYK").post("http://extrastore.org/api/v1/products/",
                        json: {product: { sku: sku,
                                          price: price,
@@ -173,12 +173,13 @@
                                          store_ids: store_ids,
                                          category_ids: category_ids,
                                          availability: availability,
-                                         old_price: old_price
+                                         old_price: old_price,
+                                         yandex_market_export: yandex_market_export
                                         }})
   end
 
-  def update_product_extrastore(sku, price, short_desc, title, image, filename, full_desc, category_ids, availability, store_ids, old_price)
-    page = HTTP.headers(authorization: "Token $2a$10$h1Of14AYJkYa5kpiKJTQ7uw/r96shHcgswG/J6rcuaQJAtgFLpjYK").put("http://extrastore.org/api/v1/products/#{barcode}",
+  def update_product_extrastore(sku, price, short_desc, title, image, filename, full_desc, category_ids, store_ids, old_price, yandex_market_export)
+    page = HTTP.headers(authorization: "Token $2a$10$h1Of14AYJkYa5kpiKJTQ7uw/r96shHcgswG/J6rcuaQJAtgFLpjYK").put("http://extrastore.org/api/v1/products/4100420015403",
                        json: {product: { sku: sku,
                                          price: price,
                                          description: short_desc,
@@ -188,132 +189,148 @@
                                          long_description: full_desc,
                                          store_ids: store_ids,
                                          category_ids: category_ids,
-                                         availability: availability,
-                                         old_price: old_price
+                                         old_price: old_price,
+                                         yandex_market_export: yandex_market_export
                                         }})
   end
 
   # @src_for_csv = []
   art_count = []
   start = Time.now
+  array_of_articles = [(5310..5310)]
+  # array_of_articles = [(1000..4800), (5100..5320), (6050..6970), (7050..7950), (8000..9100), (20624..20780), (39000..39010), (77160..77170)]
+  array_of_articles.each do |range|
+    range.each do |product_id|   # Art from 1007 to 77169
 
-  (369..369).each do |product_id|   # Art from 1007 to 77169
+      result = get_lm_product_data_liquimoly_ru(product_id)
+      next if result[0].nil?
+      art = result[0].rpartition(' ').last
+      art_count << art
 
-    end_date = get_lm_product_data_liquimoly_ru(product_id)
-    next if end_date[0].nil?
-    art = end_date[0].rpartition(' ').last
-    art_count << art
+      if result[5].include?('шт')
+        weight = ' (' + 0.1.to_s + ' кг)'
+      else
+        weight = ' (' + result[5].split(' ')[-2] + ' л)'
+      end
 
-    if end_date[5].include?('шт')
-      weight = ' (' + 0.1.to_s + ' кг)'
-    else
-      weight = ' (' + end_date[5].split(' ')[-2] + ' л)'
-    end
+      if /[0-9]-[A-Z]/.match(result[3])
+        data = result[3].partition(/[0-9]-[A-Z]/)
+        short_desc = data[0].to_s.lstrip.rstrip.squeeze(" ") + '.'
+        @title = data[1..data.length].join.squeeze(" ") + weight + " (art: #{art})"
+      elsif /[A-Z0-9]-[A-Z]/.match(result[3])
+        data = result[3].partition(/[A-Z]/)
+        short_desc = data[0].to_s.rstrip.lstrip.squeeze(" ") + '.'
+        @title = data[1..data.length].join.squeeze(" ") + weight + " (art: #{art})"
+      else
+        data = result[3].partition(/[A-Z]/)
+        short_desc = data[0].to_s.rstrip.lstrip.squeeze(" ") + '.'
+        @title = data[1..data.length].join.squeeze(" ") + weight + " (art: #{art})"
+      end
 
-    if /[0-9]-[A-Z]/.match(end_date[3])
-      data = end_date[3].partition(/[0-9]-[A-Z]/)
-      short_desc = data[0].to_s.lstrip.rstrip.squeeze(" ") + '.'
-      @title = data[1..data.length].join.squeeze(" ") + weight + " (art: #{art})"
-    elsif /[A-Z0-9]-[A-Z]/.match(end_date[3])
-      data = end_date[3].partition(/[A-Z]/)
-      short_desc = data[0].to_s.rstrip.lstrip.squeeze(" ") + '.'
-      @title = data[1..data.length].join.squeeze(" ") + weight + " (art: #{art})"
-    else
-      data = end_date[3].partition(/[A-Z]/)
-      short_desc = data[0].to_s.rstrip.lstrip.squeeze(" ") + '.'
-      @title = data[1..data.length].join.squeeze(" ") + weight + " (art: #{art})"
-    end
+      case
+      when short_desc.length > 64
+        puts "short_desc length > 64    #{art}"
+      end
 
-    # if /[0-9]/.match(end_date[3])
-    #   short_desc = /.+[А-Яа-я0-9]-.+[А-Яа-я]/.match(end_date[3]).to_s + '.'
-    #   if short_desc == '.'
-    #     short_desc = end_date[3].gsub(/[^А-Яа-я ( ) . "]/, ' ').rstrip.squeeze(" ") + '.'
-    #   end
-    #
-    #   title_data = end_date[3].split
-    #   data_array = []
-    #   title_data.each do |name|
-    #     if /[A-Za-z0-9]/.match(name)
-    #       title_data = data_array << name
-    #       @title ='Liqui Moly ' + title_data.join(' ').squeeze(" ") + " (#{weight} л)" + " (art: #{art})"
-    #     end
-    #   end
-    # else
-    #   short_desc = end_date[3].gsub(/[^А-Яа-я ( ) . "]/, ' ').rstrip.squeeze(" ") + '.'
-    #   @title ='Liqui Moly ' + end_date[3].gsub(/[А-Яа-я ( ) . "]/, ' ').lstrip.squeeze(" ") + " (#{weight} л)" + " (art: #{art})"
-    # end
+      if short_desc.length > 64   # For Extrastore
+        data = short_desc[0..63].split(' ')
+        data.pop
+        short_desc = data.join(' ').rstrip + '.'
+      end
 
-    case
-    when short_desc.length > 64
-      puts "short_desc length > 64    #{art}"
-    end
+      if short_desc.include?('масло')   # For Extrastore
+        category_ids = [1206]
+      elsif short_desc.include?('салфетки')
+        category_ids = [1277]
+      else
+        category_ids = [1201]
+      end
 
-    if short_desc.length > 64   # For Extrastore
-      data = short_desc[0..63].split(' ')
-      data.pop
-      short_desc = data.join(' ').rstrip + '.'
-    end
+      get_lm_product_image(product_id)
+      filename = @title.gsub(/ /, '_') + @content_type_data
+      image = @image
 
-    # if short_desc.include?('масло')   # For Extrastore
-    #   category_ids = [1206]
-    # elsif short_desc.include?('салфетки')
-    #   category_ids = [1277]
-    # else
-    #   category_ids = [1201]
-    # end
+      title = @title
 
-    get_lm_product_image(product_id)
-    filename = @title.gsub(/ /, '_') + @content_type_data
-    image = @image
+      full_desc = '<p><h3>Свойства</h3></p>' + result[1] + '<p><h3>Применение</h3></p>' + result[2]   # For Extrastore
 
-    title = @title
+      barcode = barcode_from_product_art(art)
 
-    full_desc = '<p><h3>Свойства</h3></p>' + end_date[1] + '<p><h3>Применение</h3></p>' + end_date[2]   # For Extrastore
+      sku = barcode
 
-    barcode = barcode_from_product_art(art)
+      purch_price = get_purchase_price(art)   # For Extrapost
+      next if purch_price <= 30
 
-    sku = barcode
+      price = (purch_price * 1.357).round
 
-    purch_price = get_purchase_price(art)   # For Extrapost
-    next if purch_price <= 30
+      old_price = (purch_price * 1.531).round   # For Extrastore
 
-    price = (purch_price * 1.356).round
+      country_of_origin = 'DE'  # For Extrapost
 
-    old_price = (purch_price * 1.531).round   # For Extrastore
+      store_ids = [100]   # Avto-Raketa in Extrastore
 
-    country_of_origin = 'DE'  # For Extrapost
+      store_id = 3   # Avto-Raketa in Extrapost
 
-    store_ids = [100]   # Avto-Raketa in Extrastore
+      availability = 'on_demand'   # For Extrastore
 
-    store_id = 3   # Avto-Raketa in Extrapost
+      yandex_market_export = true   # For Extrastore
 
-    availability = 'on_demand'   # For Extrastore
+      # puts short_desc, title, '- - - - - - -'
 
-    puts short_desc, title, '- - - - - - -'
+      create_product_extrapost(sku, purch_price, barcode, store_id, price, short_desc, title, weight, image, filename, country_of_origin)
+      # update_product_extrapost(sku, purch_price, barcode, store_id, price, short_desc, title, weight, image, filename, country_of_origin)
+      # create_product_extrastore(sku, price, short_desc, title, image, filename, full_desc, store_ids, category_ids, availability, old_price)
+      # update_product_extrastore(sku, old_price, price, short_desc, full_desc, title, image, filename, category_ids, store_ids, yandex_market_export)
 
-    case
-    when /[^0-9]/.match(barcode)
-      puts "barcode is NAN   #{art}"
-    when barcode.length > 13
-      puts "barcode too big   #{art}"
-    when art.include?('*')
-      puts "product is not available for order   #{art}"
-    when purch_price.to_f <= 30
-      puts "purchase_price too small   #{art}"
-    when price.to_f <= 30
-      puts "price too small   #{art}"
-    when price.to_f < purch_price.to_f
-      puts "purchase_price too big   #{art}"
-    when /[^0-9.,]/.match(purch_price.to_s)
-      puts "purchase_price is NAN   #{art}"
-    when /[^0-9.,]/.match(price.to_s)
-      puts "price is NAN   #{art}"
+      puts sku, purch_price, price, old_price, short_desc, full_desc, title, filename, category_ids, availability, store_ids
+
+      case
+      when /[^0-9]/.match(barcode)
+        puts "barcode is NAN   #{art}"
+      when barcode.length > 13
+        puts "barcode too big   #{art}"
+      when art.include?('*')
+        puts "product is not available for order   #{art}"
+      when purch_price.to_f <= 30
+        puts "purchase_price too small   #{art}"
+      when price.to_f <= 30
+        puts "price too small   #{art}"
+      when price.to_f < purch_price.to_f
+        puts "purchase_price too big   #{art}"
+      when /[^0-9.,]/.match(purch_price.to_s)
+        puts "purchase_price is NAN   #{art}"
+      when /[^0-9.,]/.match(price.to_s)
+        puts "price is NAN   #{art}"
+      when short_desc.length > 64
+        puts "short_desc length > 64    #{art}"
+      end
     end
   end
 
   puts 'Number of goods:   ' + "#{art_count.size}", '- - - - -'
   finish = Time.now
   puts (finish - start).round.to_s + ' sec'
+  
+
+
+        # if /[0-9]/.match(result[3])
+        #   short_desc = /.+[А-Яа-я0-9]-.+[А-Яа-я]/.match(result[3]).to_s + '.'
+        #   if short_desc == '.'
+        #     short_desc = result[3].gsub(/[^А-Яа-я ( ) . "]/, ' ').rstrip.squeeze(" ") + '.'
+        #   end
+        #
+        #   title_data = result[3].split
+        #   data_array = []
+        #   title_data.each do |name|
+        #     if /[A-Za-z0-9]/.match(name)
+        #       title_data = data_array << name
+        #       @title ='Liqui Moly ' + title_data.join(' ').squeeze(" ") + " (#{weight} л)" + " (art: #{art})"
+        #     end
+        #   end
+        # else
+        #   short_desc = result[3].gsub(/[^А-Яа-я ( ) . "]/, ' ').rstrip.squeeze(" ") + '.'
+        #   @title ='Liqui Moly ' + result[3].gsub(/[А-Яа-я ( ) . "]/, ' ').lstrip.squeeze(" ") + " (#{weight} л)" + " (art: #{art})"
+        # end
 
     # result = get_lm_product_data(product_id)
     # next if result[0].nil?
@@ -373,10 +390,7 @@
     #
 
 
-    # create_product_extrapost(sku, purchase_price, barcode, store_id, price, short_desc, title, weight, image, filename, country_of_origin)
-    # update_product_extrapost(sku, purchase_price, barcode, store_id, price, short_desc, title, weight, image, filename, country_of_origin)
-    # update_product_extrastore(sku, price, short_desc, title, image, filename, full_desc, category_ids, availability, store_ids, old_price)
-    # create_product_extrastore(sku, price, short_desc, title, image, filename, full_desc, store_ids, category_ids, availability, old_price)
+
 
     # @src_for_csv << ["#{art}", "#{title}", "#{short_desc}", "#{sku_full}", "#{barcode}", "#{purchase_price}", "#{price}", "#{weight}", "#{full_desc}"]
 
