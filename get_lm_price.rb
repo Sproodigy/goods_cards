@@ -16,47 +16,21 @@
   require 'json'
   require 'active_support/core_ext/string/access'
 
-  def get_lm_product_data(product_id)
-  # Load page html and parse it with Nokogiri
-    page = Nokogiri::HTML(HTTP.follow.get("http://www.lm-shop.ru/index.php?route=product/product&product_id=#{product_id}").to_s)
-  # Select html element from page and print it
-    [
-  # Art (0)
-      page.css('#tab-attribute > table.attribute > tbody > tr:nth-last-child(2) > td:nth-child(2)').first&.content,
-  # Full description (1)
-      page.css('.product-description').first,
-  # Name, short decription and volume (2)
-      (page.css('.product-info h1').first&.content unless page.css('.product-info h1').first&.content.nil?),
-  # New price (3)
-      page.css('.product-info span.price-new').first&.content&.gsub(/[^0-9\.]/, '')&.to_f,
-  # Image (4)
-      (page.css('a#zoom_link1').first[:href] unless page.css('a#zoom_link1').first.nil?),
-  # Weight (5)
-      page.css('#tab-attribute > table.attribute > tbody > tr:nth-last-child(1) > td:nth-child(2)').first&.content,
-  # Old price (6)
-      page.css('.product-info .price').first&.content&.gsub(/[^0-9\.]/, '')&.to_f
-    ]
-  end
-
   def get_lm_product_data_liquimoly_ru(product_id)
   # Load page html and parse it with Nokogiri
     page = Nokogiri::HTML(HTTP.follow.get("http://liquimoly.ru/item/#{product_id}.html").to_s)
   # Select html element from page and print it
-    [
-  # Art (0)
-    page.css('.card_desc strong').first&.content,
+    {
+    sku: page.css('.card_desc strong').first&.content,
+
   # Full description
-    # Properties (1)
-    page.css('#tabs-1 p').first,
-    # Application of goods (2)
-    page.css('#tabs-2 p').last,
-  # Name, short decription (3)
-      page.css('.fl_f_div h1').first&.content,
-  # Image (4)
-      (page.css('.fl_f_div a.big_img_l.loupe_target').first[:href] unless page.css('.fl_f_div a.big_img_l.loupe_target').first.nil?),
-  # Weight (5)
-      page.css('.card_desc a').first&.content
-    ]
+    props: page.css('#tabs-1 p').first,
+    apps: page.css('#tabs-2 p').last,
+
+    short_desc: page.css('.fl_f_div h1').first&.content,
+    image_path: (page.css('.fl_f_div a.big_img_l.loupe_target').first[:href] unless page.css('.fl_f_div a.big_img_l.loupe_target').first.nil?),
+    weight: page.css('.card_desc a').first&.content
+    }
   end
 
   def get_purchase_price(product_art)
@@ -73,9 +47,6 @@
 
       next if art_shen == nil
       next if /[^0-9\/*]/.match(art_shen.to_s)
-      @z = data << art_shen
-      # puts @z.sort
-
 
       if art_shen.to_s.include?('/')
         double_art = art_shen.to_s.gsub(/[\/]/, ' ').partition(' ')
@@ -101,21 +72,22 @@
   end
 
   def get_lm_product_image(product_id)
-
-    src = 'http://liquimoly.ru/' + get_lm_product_data_liquimoly_ru(product_id)[4]
+    product_data = get_lm_product_data_liquimoly_ru(product_id)
+    src = 'http://liquimoly.ru/' + product_data[:image_path]
     # name = get_lm_product_data(product_id)[2]
 
-    @content_type_data = File.extname(src)
-    content_type = 'image/' + @content_type_data[1,3]
+    content_type_data = File.extname(src)
+    content_type = 'image/' + content_type_data[1,3]
     image_base64_data = Base64.encode64(open(src) { |f| f.read })
-    @image = "data:#{content_type};base64,#{image_base64_data}"
-# Save file in project foldet
+    image = "data:#{content_type};base64,#{image_base64_data}"
+
+    {image: image, filename: "#{product_id}#{content_type_data}"}
+  # Save file in project foldet
     # File.open(@title + '.' + File.extname(src)[1, 3], 'wb') { |f| f.write(open(src).read) }
-    # Save image to folder on the hard drive
+  # Save file to folder on the hard drive
     # IO.copy_stream(open(src), "/home/sproodigy/Foto/Liqui_Moly_#{name}_#{get_lm_product_data(product_id)[1].first(-1)}_#{File.basename(src)}")
     # IO.copy_stream(open(src), "/Users/extra/Documents/Авторакета/LiquiMoly/Фото Liqui Moly/#{@title.gsub(/[\/ ]/, '_') + @content_type_data}")
   end
-
 
   def barcode_from_product_art(product_art)
     s = "41004200#{product_art}"
@@ -129,7 +101,7 @@
 
                              # sku пока использовать только при создании новых товаров.
 
-  def create_product_extrapost(purch_price, sku, barcode, store_id, price, short_desc, title, weight, image, filename, country_of_origin)
+  def create_product_extrapost(purch_price, sku, barcode, store_id, price, short_desc, title, weight_num, image, filename, country_of_origin)
     page = HTTP.headers(authorization: "Token e541dfef128f4f93cbdb09b320ea3fb7").post("https://xp.extrapost.ru/api/v1/products/",
                        json: {product: { purchase_price: purch_price,
                                          sku: sku,
@@ -138,15 +110,15 @@
                                          price: price,
                                          description: short_desc,
                                          title: title,
-                                         weight: weight,
+                                         weight: weight_num,
                                          image: image,
                                          image_file_name: filename,
                                          country_of_origin: country_of_origin
                                         }})
   end
 
-  def update_product_extrapost(sku, purch_price, barcode, store_id, price, short_desc, title, weight, image, filename, country_of_origin)
-    page = HTTP.headers(authorization: "Token e541dfef128f4f93cbdb09b320ea3fb7").put("https://xp.extrapost.ru/api/v1/products/#{barcode}",
+  def update_product_extrapost(purch_price, sku, barcode, store_id, price, short_desc, title, weight_num, image, filename, country_of_origin)
+    response = HTTP.headers(authorization: "Token e541dfef128f4f93cbdb09b320ea3fb7").put("https://xp.extrapost.ru/api/v1/products/#{barcode}",
                         json: {product: {purchase_price: purch_price,
                                          sku: sku,
                                          barcode: barcode,
@@ -154,14 +126,14 @@
                                          price: price,
                                          description: short_desc,
                                          title: title,
-                                         weight: weight,
+                                         weight: weight_num,
                                          image: image,
                                          image_file_name: filename,
                                          country_of_origin: country_of_origin
                                         }})
   end
 
-  def create_product_extrastore(sku, price, short_desc, title, image, filename, full_desc, store_ids, category_ids, availability, old_price, yandex_market_export)
+  def create_product_extrastore(sku, old_price, price, short_desc, full_desc, title, image, filename, category_ids, store_ids, yandex_market_export, availability)
     page = HTTP.headers(authorization: "Token $2a$10$h1Of14AYJkYa5kpiKJTQ7uw/r96shHcgswG/J6rcuaQJAtgFLpjYK").post("http://extrastore.org/api/v1/products/",
                        json: {product: { sku: sku,
                                          price: price,
@@ -178,7 +150,7 @@
                                         }})
   end
 
-  def update_product_extrastore(sku, price, short_desc, title, image, filename, full_desc, category_ids, store_ids, old_price, yandex_market_export)
+  def update_product_extrastore(sku, old_price, price, short_desc, full_desc, title, image, filename, category_ids, store_ids, yandex_market_export)
     page = HTTP.headers(authorization: "Token $2a$10$h1Of14AYJkYa5kpiKJTQ7uw/r96shHcgswG/J6rcuaQJAtgFLpjYK").put("http://extrastore.org/api/v1/products/4100420015403",
                        json: {product: { sku: sku,
                                          price: price,
@@ -197,34 +169,39 @@
   # @src_for_csv = []
   art_count = []
   start = Time.now
-  array_of_articles = [(5310..5310)]
-  # array_of_articles = [(1000..4800), (5100..5320), (6050..6970), (7050..7950), (8000..9100), (20624..20780), (39000..39010), (77160..77170)]
+  array_of_articles = [(1540..1540)]
+  # array_of_articles = [(1005..4800), (5100..5320), (6050..6970), (7050..7950), (8000..9100), (20624..20780), (39000..39010), (77160..77170)]
   array_of_articles.each do |range|
     range.each do |product_id|   # Art from 1007 to 77169
 
       result = get_lm_product_data_liquimoly_ru(product_id)
-      next if result[0].nil?
-      art = result[0].rpartition(' ').last
+      next if result[:sku].nil?
+      art = result[:sku].rpartition(' ').last
       art_count << art
 
-      if result[5].include?('шт')
+      if result[:weight].include?('шт')
         weight = ' (' + 0.1.to_s + ' кг)'
+        weight_num = 0.1
       else
-        weight = ' (' + result[5].split(' ')[-2] + ' л)'
+        weight = ' (' + result[:weight].split(' ')[-2] + ' л)'
+        weight_num = result[:weight].split(' ')[-2]
       end
 
-      if /[0-9]-[A-Z]/.match(result[3])
-        data = result[3].partition(/[0-9]-[A-Z]/)
+      if /[0-9]-[A-Z]/.match(result[:short_desc])
+        data = result[:short_desc].partition(/[0-9]-[A-Z]/)
         short_desc = data[0].to_s.lstrip.rstrip.squeeze(" ") + '.'
-        @title = data[1..data.length].join.squeeze(" ") + weight + " (art: #{art})"
-      elsif /[A-Z0-9]-[A-Z]/.match(result[3])
-        data = result[3].partition(/[A-Z]/)
-        short_desc = data[0].to_s.rstrip.lstrip.squeeze(" ") + '.'
-        @title = data[1..data.length].join.squeeze(" ") + weight + " (art: #{art})"
+        title ='Liqui Moly ' + data[1..data.length].join.squeeze(" ") + weight + " (art: #{art})"
+
+        if /[A-Z]/.match(short_desc)
+          data_array = short_desc.split
+          data_title = data_array.pop
+          short_desc = data_array.join(' ') + '.'
+          title ='Liqui Moly ' + data_title.gsub(/[.]/, ' ').rstrip + data[1..data.length].join.squeeze(" ") + weight + " (art: #{art})"
+        end
       else
-        data = result[3].partition(/[A-Z]/)
+        data = result[:short_desc].partition(/[A-Z]/)
         short_desc = data[0].to_s.rstrip.lstrip.squeeze(" ") + '.'
-        @title = data[1..data.length].join.squeeze(" ") + weight + " (art: #{art})"
+        title = 'Liqui Moly ' + data[1..data.length].join.squeeze(" ") + weight + " (art: #{art})"
       end
 
       case
@@ -246,13 +223,11 @@
         category_ids = [1201]
       end
 
-      get_lm_product_image(product_id)
-      filename = @title.gsub(/ /, '_') + @content_type_data
-      image = @image
+      image_result = get_lm_product_image(product_id)
+      image = image_result[:image]
+      filename = image_result[:filename]
 
-      title = @title
-
-      full_desc = '<p><h3>Свойства</h3></p>' + result[1] + '<p><h3>Применение</h3></p>' + result[2]   # For Extrastore
+      full_desc = '<p><h3>Свойства</h3></p>' + "#{result[:props]}" + '<p><h3>Применение</h3></p>' + "#{result[:apps]}"   # For Extrastore
 
       barcode = barcode_from_product_art(art)
 
@@ -277,12 +252,14 @@
 
       # puts short_desc, title, '- - - - - - -'
 
-      create_product_extrapost(sku, purch_price, barcode, store_id, price, short_desc, title, weight, image, filename, country_of_origin)
-      # update_product_extrapost(sku, purch_price, barcode, store_id, price, short_desc, title, weight, image, filename, country_of_origin)
-      # create_product_extrastore(sku, price, short_desc, title, image, filename, full_desc, store_ids, category_ids, availability, old_price)
-      # update_product_extrastore(sku, old_price, price, short_desc, full_desc, title, image, filename, category_ids, store_ids, yandex_market_export)
+      # create_product_extrapost(purch_price, sku, barcode, store_id, price, short_desc, title, weight_num, image, filename, country_of_origin)
+      # update_product_extrapost(purch_price, sku, barcode, store_id, price, short_desc, title, weight_num, image, filename, country_of_origin)
+      # create_product_extrastore(sku, old_price, price, short_desc, full_desc, title, image, filename, category_ids, store_ids, yandex_market_export, availability)
+      update_product_extrastore(sku, old_price, price, short_desc, full_desc, title, image, filename, category_ids, store_ids, yandex_market_export)
 
-      puts sku, purch_price, price, old_price, short_desc, full_desc, title, filename, category_ids, availability, store_ids
+      puts sku, old_price, price, short_desc, full_desc, title, filename, category_ids, store_ids, yandex_market_export, '= = = = = = ='
+      # puts weight, weight_num, store_id, sku, purch_price, price, old_price, short_desc, title, filename, category_ids, availability, store_ids, '= = = = = = = ='
+      # puts title, short_desc
 
       case
       when /[^0-9]/.match(barcode)
@@ -303,15 +280,20 @@
         puts "price is NAN   #{art}"
       when short_desc.length > 64
         puts "short_desc length > 64    #{art}"
+      when sku.length > 32
+        puts "sku > 32   #{art}"
       end
     end
   end
 
   puts 'Number of goods:   ' + "#{art_count.size}", '- - - - -'
   finish = Time.now
-  puts (finish - start).round.to_s + ' sec'
-  
-
+  end_time = (finish - start).round
+  if end_time >= 3600
+    puts end_time/60.round.to_s + ' hours ' + (end_time - (end_time/60.round)).to_s + ' sec'
+  else
+    puts end_time.to_s + ' sec'
+  end
 
         # if /[0-9]/.match(result[3])
         #   short_desc = /.+[А-Яа-я0-9]-.+[А-Яа-я]/.match(result[3]).to_s + '.'
