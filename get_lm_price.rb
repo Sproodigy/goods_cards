@@ -37,29 +37,28 @@
   # Also supports csv, csvt and tsv formats
     s = SimpleSpreadsheet::Workbook.read('app/assets/prices/Price_LM_02.08.2017.xlsx')
     s.selected_sheet = s.sheets[0]
-    data = []
     s.first_row.upto(s.last_row) do |line|
-      art_shen = s.cell(line, 4).to_s
+      data_art = s.cell(line, 4).to_s
       pur_price = s.cell(line, 8).to_s
       data_1 = Hash.new
       data_2 = Hash.new
       data_3 = Hash.new
 
-      next if art_shen == nil
-      next if /[^0-9\/*]/.match(art_shen.to_s)
+      next if data_art == nil
+      next if /[^0-9\/*]/.match(data_art.to_s)
 
-      if art_shen.to_s.include?('/')
-        double_art = art_shen.to_s.gsub(/[\/]/, ' ').partition(' ')
+      if data_art.to_s.include?('/')
+        double_art = data_art.to_s.gsub(/[\/]/, ' ').partition(' ')
         double_art.each do |art|
           next if art == ' '
-          art_shu = art.gsub(/[^0-9]/, '')
-          data_1[art_shu] = pur_price
+          end_art = art.gsub(/[^0-9]/, '')
+          data_1[end_art] = pur_price
         end
-      elsif art_shen.to_s.include?('*')
-        data_3[art_shen] = pur_price
+      elsif data_art.to_s.include?('*')
+        data_3[data_art] = pur_price
       else
-        art_shu = art_shen.to_s.gsub(/[^0-9]/, '')
-        data_2[art_shu] = pur_price
+        end_art = data_art.to_s.gsub(/[^0-9]/, '')
+        data_2[end_art] = pur_price
       end
 
       data_full = data_1.merge!(data_2).merge!(data_3)
@@ -216,9 +215,13 @@
       end
 
       if short_desc.include?('масло')   # For Extrastore
-        category_ids = [1206]
-      elsif short_desc.include?('салфетки')
-        category_ids = [1277]
+        category_ids = [1206, 1201]
+      elsif short_desc.include?('смаз')
+        category_ids = [1207, 1201]
+      elsif short_desc.include?('велосип')
+        category_ids = [1281, 1201]
+      elsif title.downcase.include?('marine')
+        category_ids = [1282, 1201]
       else
         category_ids = [1201]
       end
