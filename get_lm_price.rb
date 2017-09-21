@@ -150,7 +150,7 @@
   end
 
   def update_product_extrastore(sku, old_price, price, short_desc, full_desc, title, image, filename, category_ids, store_ids, yandex_market_export)
-    page = HTTP.headers(authorization: "Token $2a$10$h1Of14AYJkYa5kpiKJTQ7uw/r96shHcgswG/J6rcuaQJAtgFLpjYK").put("http://extrastore.org/api/v1/products/4100420015403",
+    page = HTTP.headers(authorization: "Token $2a$10$h1Of14AYJkYa5kpiKJTQ7uw/r96shHcgswG/J6rcuaQJAtgFLpjYK").put("http://extrastore.org/api/v1/products/#{sku}",
                        json: {product: { sku: sku,
                                          price: price,
                                          description: short_desc,
@@ -168,13 +168,14 @@
   # @src_for_csv = []
   art_count = []
   start = Time.now
-  array_of_articles = [(1540..1540)]
+  array_of_articles = [(3553..3553)]
   # array_of_articles = [(1005..4800), (5100..5320), (6050..6970), (7050..7950), (8000..9100), (20624..20780), (39000..39010), (77160..77170)]
   array_of_articles.each do |range|
     range.each do |product_id|   # Art from 1007 to 77169
 
       result = get_lm_product_data_liquimoly_ru(product_id)
       next if result[:sku].nil?
+      # next if result[:sku].include?('*')
       art = result[:sku].rpartition(' ').last
       art_count << art
 
@@ -214,14 +215,16 @@
         short_desc = data.join(' ').rstrip + '.'
       end
 
-      if short_desc.include?('масло')   # For Extrastore
+      if short_desc.downcase.include?('масло')   # For Extrastore
         category_ids = [1206, 1201]
-      elsif short_desc.include?('смаз')
+      elsif short_desc.downcase.include?('смаз')
         category_ids = [1207, 1201]
-      elsif short_desc.include?('велосип')
+      elsif short_desc.downcase.include?('велосип')
         category_ids = [1281, 1201]
       elsif title.downcase.include?('marine')
         category_ids = [1282, 1201]
+      elsif title.downcase.include?('pro')
+        category_ids = [1283, 1201]
       else
         category_ids = [1201]
       end
@@ -258,11 +261,10 @@
       # create_product_extrapost(purch_price, sku, barcode, store_id, price, short_desc, title, weight_num, image, filename, country_of_origin)
       # update_product_extrapost(purch_price, sku, barcode, store_id, price, short_desc, title, weight_num, image, filename, country_of_origin)
       # create_product_extrastore(sku, old_price, price, short_desc, full_desc, title, image, filename, category_ids, store_ids, yandex_market_export, availability)
-      update_product_extrastore(sku, old_price, price, short_desc, full_desc, title, image, filename, category_ids, store_ids, yandex_market_export)
+      # update_product_extrastore(sku, old_price, price, short_desc, full_desc, title, image, filename, category_ids, store_ids, yandex_market_export)
 
-      puts sku, old_price, price, short_desc, full_desc, title, filename, category_ids, store_ids, yandex_market_export, '= = = = = = ='
+      # puts sku, old_price, price, short_desc, full_desc, title, filename, category_ids, store_ids, yandex_market_export, '= = = = = = ='
       # puts weight, weight_num, store_id, sku, purch_price, price, old_price, short_desc, title, filename, category_ids, availability, store_ids, '= = = = = = = ='
-      # puts title, short_desc
 
       case
       when /[^0-9]/.match(barcode)
@@ -291,119 +293,20 @@
 
   puts 'Number of goods:   ' + "#{art_count.size}", '- - - - -'
   finish = Time.now
-  end_time = (finish - start).round
-  if end_time >= 3600
-    puts end_time/60.round.to_s + ' hours ' + (end_time - (end_time/60.round)).to_s + ' sec'
+  # end_time = (finish - start).round
+   full_time = 27
+  if full_time >= 3600
+    hours = (full_time/3600).round
+    min = (full_time/60 - hours*60).round
+    sec = (full_time - (min*60 + hours*3600)).to_s
+    puts "#{hours} hours   #{min} min   #{sec} sec"
+  elsif full_time >= 60
+    min = (full_time/60).round
+    sec = (full_time - min*60).to_s
+    puts "#{min} min   #{sec} sec"
   else
-    puts end_time.to_s + ' sec'
+    puts full_time.to_s + ' sec'
   end
-
-        # if /[0-9]/.match(result[3])
-        #   short_desc = /.+[А-Яа-я0-9]-.+[А-Яа-я]/.match(result[3]).to_s + '.'
-        #   if short_desc == '.'
-        #     short_desc = result[3].gsub(/[^А-Яа-я ( ) . "]/, ' ').rstrip.squeeze(" ") + '.'
-        #   end
-        #
-        #   title_data = result[3].split
-        #   data_array = []
-        #   title_data.each do |name|
-        #     if /[A-Za-z0-9]/.match(name)
-        #       title_data = data_array << name
-        #       @title ='Liqui Moly ' + title_data.join(' ').squeeze(" ") + " (#{weight} л)" + " (art: #{art})"
-        #     end
-        #   end
-        # else
-        #   short_desc = result[3].gsub(/[^А-Яа-я ( ) . "]/, ' ').rstrip.squeeze(" ") + '.'
-        #   @title ='Liqui Moly ' + result[3].gsub(/[А-Яа-я ( ) . "]/, ' ').lstrip.squeeze(" ") + " (#{weight} л)" + " (art: #{art})"
-        # end
-
-    # result = get_lm_product_data(product_id)
-    # next if result[0].nil?
-    #
-    # get_purchase_price(result[0])
-    #
-    # art = result[0]
-    # art_count << art
-    #
-    # barcode = barcode_from_product_art(result[0])
-    #
-    # sku = barcode
-    #
-    # price = result[3]
-    # old_price = result[6]
-    # if result[3] == nil then old_price end
-    #
-    # purchase_price = get_purchase_price(result[0])   # For Extrapost
-    #
-    # weight = result[5][0..-2].gsub(/[a-zA-Zа-яА-Я ]/, '') if /[a-zA-Zа-яА-Я]/.match(result[5])   # For Extrapost
-
-    #
-    # full_desc = result[1]   # For Extrastore
-    #
-
-    #
-    # if result[2].include?(' — ')
-    #   data = result[2].partition(' — ')
-    #   short_desc = data.last.split
-    #   short_desc[-2, 2] = nil
-    #   short_desc = short_desc.compact!.join(' ') + '.'
-    #   # sku_full = "lm_#{data.first.downcase.gsub(/-|[ ]/, '_')}_#{weight}"
-    #   @title = "Liqui Moly #{data.first} (#{weight} kg) (art: #{art})"
-    # elsif
-    #   result[2].include?(' - ')
-    #   data = result[2].partition(' - ')
-    #   short_desc = data.last.split
-    #   short_desc[-2, 2] = nil
-    #   short_desc = short_desc.compact!.join(' ') + '.'
-    #   @title = "Liqui Moly #{data.first} (#{weight} kg) (art: #{art})"
-    #   # sku_full = "lm_#{data.first.downcase.gsub(/-|[ ]/, '_')}_#{weight}"
-    # else
-    #   short_desc = ''
-    #   title_src = ''
-    #   data = result[2].split(' ') unless result[2].nil?
-    #   data.each do |word|
-    #     if /[А-Яа-я]/.match(word)
-    #       short_desc = short_desc + word + ' '
-    #     else
-    #       /[a-zA-Z]/.match(word)
-    #       title_src = title_src + word + ' '
-    #     end
-    #     # sku_full = "lm_#{title_src.downcase.gsub(/-|[ ]/, '_')}_#{weight}"
-    #     @title = "Liqui Moly #{title_src} (#{weight} kg) (art: #{art})"
-    #   end
-    # end
-    #
-
-
-
-
-    # @src_for_csv << ["#{art}", "#{title}", "#{short_desc}", "#{sku_full}", "#{barcode}", "#{purchase_price}", "#{price}", "#{weight}", "#{full_desc}"]
-
-    # if sku_full.length > 32
-    #     sku_full_part = sku_full.gsub(/_/, ' ').split
-    #     sku_full_part_new = sku_full_part.map { |word| word.length >= 10 ? word = word[0..4] : word }
-    #     sku_full_part_new = "#{sku_full_part_new.join('_')}"
-    #     sku_full = sku_full_part_new
-    #
-    #     if sku_full_part_new.length > 32
-    #         sku_part = sku_full_part_new.gsub(/_/, ' ').split
-    #         sku_part_new = sku_part.map { |word| word.length <= 9 && word.length >= 5 ? word = word[0..2] : word }
-    #         sku_part_new = "#{sku_part_new.join('_')}"
-    #         sku_full = sku_part_new
-    #
-    #         if sku_part_new.length > 32
-    #             sku_part_end = sku_part_new.gsub(/_/, ' ').split
-    #             sku_part_end.delete_at(1)
-    #             sku_full = "#{sku_part_end.join('_')}"
-    #         else
-    #           sku_full
-    #         end
-    #     else
-    #       sku_full
-    #     end
-    # else
-    #   sku_full
-    # end
 
   # # To add a header, the columns should be written monotonously with the header (each data column separately)
   #
