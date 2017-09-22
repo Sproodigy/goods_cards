@@ -149,7 +149,7 @@
                                         }})
   end
 
-  def update_product_extrastore(sku, old_price, price, short_desc, full_desc, title, image, filename, category_ids, store_ids, yandex_market_export)
+  def update_product_extrastore(sku, old_price, price, short_desc, full_desc, title, image, filename, store_ids, yandex_market_export)
     page = HTTP.headers(authorization: "Token $2a$10$h1Of14AYJkYa5kpiKJTQ7uw/r96shHcgswG/J6rcuaQJAtgFLpjYK").put("http://extrastore.org/api/v1/products/#{sku}",
                        json: {product: { sku: sku,
                                          price: price,
@@ -159,7 +159,6 @@
                                          image_file_name: filename,
                                          long_description: full_desc,
                                          store_ids: store_ids,
-                                         category_ids: category_ids,
                                          old_price: old_price,
                                          yandex_market_export: yandex_market_export
                                         }})
@@ -168,8 +167,8 @@
   # @src_for_csv = []
   art_count = []
   start = Time.now
-  array_of_articles = [(3553..3553)]
-  # array_of_articles = [(1005..4800), (5100..5320), (6050..6970), (7050..7950), (8000..9100), (20624..20780), (39000..39010), (77160..77170)]
+  # array_of_articles = [(9053..9053)]
+  array_of_articles = [(1005..4800), (5100..5320), (6050..6970), (7050..7950), (8000..9100), (20624..20780), (39000..39010), (77160..77170)]
   array_of_articles.each do |range|
     range.each do |product_id|   # Art from 1007 to 77169
 
@@ -183,8 +182,9 @@
         weight = ' (' + 0.1.to_s + ' кг)'
         weight_num = 0.1
       else
-        weight = ' (' + result[:weight].split(' ')[-2] + ' л)'
-        weight_num = result[:weight].split(' ')[-2]
+        weight_data = result[:weight].split(' ')[-2]
+        weight = ' (' + weight_data + ' л)'
+        weight_num = weight_data
       end
 
       if /[0-9]-[A-Z]/.match(result[:short_desc])
@@ -223,7 +223,7 @@
         category_ids = [1281, 1201]
       elsif title.downcase.include?('marine')
         category_ids = [1282, 1201]
-      elsif title.downcase.include?('pro')
+      elsif title.downcase.include?('pro-')
         category_ids = [1283, 1201]
       else
         category_ids = [1201]
@@ -256,12 +256,12 @@
 
       yandex_market_export = true   # For Extrastore
 
-      # puts short_desc, title, '- - - - - - -'
+      puts category_ids, '- - - - - - -'
 
       # create_product_extrapost(purch_price, sku, barcode, store_id, price, short_desc, title, weight_num, image, filename, country_of_origin)
       # update_product_extrapost(purch_price, sku, barcode, store_id, price, short_desc, title, weight_num, image, filename, country_of_origin)
-      # create_product_extrastore(sku, old_price, price, short_desc, full_desc, title, image, filename, category_ids, store_ids, yandex_market_export, availability)
-      # update_product_extrastore(sku, old_price, price, short_desc, full_desc, title, image, filename, category_ids, store_ids, yandex_market_export)
+      create_product_extrastore(sku, old_price, price, short_desc, full_desc, title, image, filename, category_ids, store_ids, yandex_market_export, availability)
+      # update_product_extrastore(sku, old_price, price, short_desc, full_desc, title, image, filename, store_ids, yandex_market_export)
 
       # puts sku, old_price, price, short_desc, full_desc, title, filename, category_ids, store_ids, yandex_market_export, '= = = = = = ='
       # puts weight, weight_num, store_id, sku, purch_price, price, old_price, short_desc, title, filename, category_ids, availability, store_ids, '= = = = = = = ='
@@ -293,19 +293,18 @@
 
   puts 'Number of goods:   ' + "#{art_count.size}", '- - - - -'
   finish = Time.now
-  # end_time = (finish - start).round
-   full_time = 27
+  full_time = (finish - start)
   if full_time >= 3600
     hours = (full_time/3600).round
     min = (full_time/60 - hours*60).round
-    sec = (full_time - (min*60 + hours*3600)).to_s
+    sec = (full_time - (min*60 + hours*3600)).round
     puts "#{hours} hours   #{min} min   #{sec} sec"
   elsif full_time >= 60
     min = (full_time/60).round
     sec = (full_time - min*60).to_s
     puts "#{min} min   #{sec} sec"
   else
-    puts full_time.to_s + ' sec'
+    puts full_time.round.to_s + ' sec'
   end
 
   # # To add a header, the columns should be written monotonously with the header (each data column separately)
