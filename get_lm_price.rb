@@ -167,8 +167,8 @@
   # @src_for_csv = []
   art_count = []
   start = Time.now
-  # array_of_articles = [(9053..9053)]
-  array_of_articles = [(1005..4800), (5100..5320), (6050..6970), (7050..7950), (8000..9100), (20624..20780), (39000..39010), (77160..77170)]
+  array_of_articles = [(25000..25070)]
+  # array_of_articles = [(1005..4800), (5100..5320), (6050..6970), (7050..7950), (8000..9100), (20624..20780), (39000..39010), (77160..77170)]
   array_of_articles.each do |range|
     range.each do |product_id|   # Art from 1007 to 77169
 
@@ -215,13 +215,7 @@
         short_desc = data.join(' ').rstrip + '.'
       end
 
-      if short_desc.downcase.include?('масло')   # For Extrastore
-        category_ids = [1206, 1201]
-      elsif short_desc.downcase.include?('смаз')
-        category_ids = [1207, 1201]
-      elsif short_desc.downcase.include?('велосип')
-        category_ids = [1281, 1201]
-      elsif title.downcase.include?('marine')
+      if title.downcase.include?('marine')
         category_ids = [1282, 1201]
       elsif title.downcase.include?('pro-')
         category_ids = [1283, 1201]
@@ -301,7 +295,7 @@
     puts "#{hours} hours   #{min} min   #{sec} sec"
   elsif full_time >= 60
     min = (full_time/60).round
-    sec = (full_time - min*60).to_s
+    sec = (full_time - min*60).round.to_s
     puts "#{min} min   #{sec} sec"
   else
     puts full_time.round.to_s + ' sec'
