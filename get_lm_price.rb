@@ -167,8 +167,8 @@
   # @src_for_csv = []
   art_count = []
   start = Time.now
-  array_of_articles = [(25000..25070)]
-  # array_of_articles = [(1005..4800), (5100..5320), (6050..6970), (7050..7950), (8000..9100), (20624..20780), (39000..39010), (77160..77170)]
+  array_of_articles = [(25000..25002)]
+  # array_of_articles = [(1005..4800), (5100..5320), (6050..6970), (7050..7950), (8000..9100), (20624..20780), (25000..25070), (39000..39010), (77160..77170)]
   array_of_articles.each do |range|
     range.each do |product_id|   # Art from 1007 to 77169
 
@@ -250,11 +250,11 @@
 
       yandex_market_export = true   # For Extrastore
 
-      puts category_ids, '- - - - - - -'
+      puts sku, result[:image_path], '- - - - - - -'
 
       # create_product_extrapost(purch_price, sku, barcode, store_id, price, short_desc, title, weight_num, image, filename, country_of_origin)
       # update_product_extrapost(purch_price, sku, barcode, store_id, price, short_desc, title, weight_num, image, filename, country_of_origin)
-      create_product_extrastore(sku, old_price, price, short_desc, full_desc, title, image, filename, category_ids, store_ids, yandex_market_export, availability)
+      # create_product_extrastore(sku, old_price, price, short_desc, full_desc, title, image, filename, category_ids, store_ids, yandex_market_export, availability)
       # update_product_extrastore(sku, old_price, price, short_desc, full_desc, title, image, filename, store_ids, yandex_market_export)
 
       # puts sku, old_price, price, short_desc, full_desc, title, filename, category_ids, store_ids, yandex_market_export, '= = = = = = ='
