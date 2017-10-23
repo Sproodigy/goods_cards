@@ -73,23 +73,29 @@ def create_product(purchase_price, sku, barcode, store_id, price, short_desc, ti
                                       }})
 end
 
+  # name = /#{string}/.match()
+  # puts string
+
   array_of_names = [
                     'suprotec-tribotechnical-composition-of-active-petrol', 'suprotec-asset-gasoline-plus',
                     'suprotec-tribotechnical-composition-of-active-diesel', 'suprotec-tribotechnical-composition-active-plus-diesel',
                     'suprotec-tribotechnical-composition-of-the-active-regular', 'suprotec-tribotechnical-composition-off-road-4x4-engine-gasoline',
-                    'suprotec-tribotechnical-composition-off-road-4x4-engine-diesel', 'suprotec-tribotechnical-composition-max-ice',
+                    'suprotec-tribotechnical-composition-off-road-4x4-engine-diesel', 'suprotec-tribotechnical-composition-off-road-4x4-automatic-transmission',
+                    'suprotec-tribotechnical-composition-off-road-4x4-manual-transmission', 'suprotec-tribotechnical-composition-off-road-gear',
+                    'suprotec-tribotechnical-composition-max-ice',
                     'suprotec-tribotechnical-composition-mototec-2', 'suprotec-tribotechnical-composition-mototec-4',
                     'fuel-system-cleaner-suprotec-petrol', 'fuel-system-cleaner-suprotec-diesel', 'suprotec-antigel-3-in-1',
                     'suprotec-max-antigel-3-in-1', 'suprotec-tribotechnical-composition-max-pump', 'suprotec-tribotechnical-composition-injection-pump',
-                    'long-term-flushing-the-engine-with-suprotec', 'suprotec-tribotechnical-composition-off-road-4x4-automatic-transmission',
-                    'suprotec-tribotechnical-composition-off-road-4x4-manual-transmission', 'suprotec-tribotechnical-composition-mkpp',
+                    'long-term-flushing-the-engine-with-suprotec', 'suprotec-tribotechnical-composition-mkpp',
                     'suprotec-tribotechnical-composition-automatic', 'suprotek-tribotehnicheskii-sostav-maks-mkpp',
-                    'suprotec-tribotechnical-composition-hur', 'suprotec-tribotechnical-composition-reducer', 'suprotec-tribotechnical-composition-off-road-gear',
+                    'suprotec-tribotechnical-composition-hur', 'suprotec-tribotechnical-composition-reducer',
                     'suprotec-tribotechnical-composition-max-hydraulics', 'silikonovyi-vosk-sr100', 'tribological-lubrication-of-the-universal-pro',
                     'tribological-grease-suprotec-universal-m', 'tribological-concentrate-suprotec', 'ochistitel-sistemy-ventiliatsii-i-konditsionera-plius',
                     'cleaner-ventilation-and-air-conditioning-suprotec', 'legkii-avtomobilnyi-aromatizator-vozduha', 'car-diffuser-air',
                     'gift-set-active-plus-petrol-', 'gift-set-suprotec-active-plus-diesel'
+                    # Exclude "SR-32" and "PRO SPRO 32" — edit manually.
                   ]
+
 
   array_of_names.each do |name|
 
@@ -109,7 +115,7 @@ end
 
     store_id = 3   # Avto-Raketa
 
-    puts barcode, title, price_old, price_new, filename, '- - - - - - -'
+    puts barcode, title, '- - - - - - -'
   end
 
     # next if (result[:avail].match('не поставляется') unless result[:avail].nil?)
