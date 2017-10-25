@@ -11,14 +11,19 @@ require 'date'
 require 'json'
 
 agent = Mechanize.new
-page  = agent.get("http://bardahl-motor.ru/motornye-masla/")
-review_links = page.links_with(text: /\w+/, href: %r{/motornye-masla/\w+})[0, 59]
-data_source = review_links.each do |l|
-  data = l.click
-  data = data.search('#main .review-meta .info')
-  pp art = data.search('strong').text
+page  = agent.get("http://www.bardahlrussia.ru/productions/for_cars/engine_oils")
+# page  = agent.get("http://bardahl-motor.ru/motornye-masla/")
+# page  = agent.get("https://oilbardahl.ru/avtomobili/maslo_v_dvigatel/")
+review_links = page.links_with(href: %r{/?page_id=\d+})
+puts review_links
+# data = review_links[0].click
+# puts data.search.text
+# review_links = page.links_with(text: /\w+/, href: %r{/motornye-masla/\w+})[0, 59]
+# data_source = review_links.each do |l|
+  # data = l.click
+  # pp art = data.search('.articul strong').text
   # artist = review_meta.search('h1')[0].text
-end
+# end
 # agent.get('http://bardahl-motor.ru/motornye-masla/xtc-5w30-20-l').search("strong").first.content
 
 
