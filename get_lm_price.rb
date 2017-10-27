@@ -51,14 +51,14 @@
         double_art = data_art.to_s.gsub(/[\/]/, ' ').partition(' ')
         double_art.each do |art|
           next if art == ' '
-          end_art = art.gsub(/[^0-9]/, '')
-          data_1[end_art] = pur_price
+          art_end = art.gsub(/[^0-9]/, '')
+          data_1[art_end] = pur_price
         end
       elsif data_art.to_s.include?('*')
         data_3[data_art] = pur_price
       else
-        end_art = data_art.to_s.gsub(/[^0-9]/, '')
-        data_2[end_art] = pur_price
+        art_end = data_art.to_s.gsub(/[^0-9]/, '')
+        data_2[art_end] = pur_price
       end
 
       data_full = data_1.merge!(data_2).merge!(data_3)
@@ -167,7 +167,7 @@
   # @src_for_csv = []
   art_count = []
   start = Time.now
-  array_of_articles = [(25000..25002)]
+  array_of_articles = [(5116..5116)]
   # array_of_articles = [(1005..4800), (5100..5320), (6050..6970), (7050..7950), (8000..9100), (20624..20780), (25000..25070), (39000..39010), (77160..77170)]
   array_of_articles.each do |range|
     range.each do |product_id|   # Art from 1007 to 77169
@@ -234,7 +234,7 @@
       sku = barcode
 
       purch_price = get_purchase_price(art)   # For Extrapost
-      next if purch_price <= 30
+      next if purch_price <= 30 unless art == "5116"
 
       price = (purch_price * 1.357).round
 
@@ -250,15 +250,15 @@
 
       yandex_market_export = true   # For Extrastore
 
-      puts sku, result[:image_path], '- - - - - - -'
+      # puts sku, result[:image_path], '- - - - - - -'
 
       # create_product_extrapost(purch_price, sku, barcode, store_id, price, short_desc, title, weight_num, image, filename, country_of_origin)
       # update_product_extrapost(purch_price, sku, barcode, store_id, price, short_desc, title, weight_num, image, filename, country_of_origin)
       # create_product_extrastore(sku, old_price, price, short_desc, full_desc, title, image, filename, category_ids, store_ids, yandex_market_export, availability)
       # update_product_extrastore(sku, old_price, price, short_desc, full_desc, title, image, filename, store_ids, yandex_market_export)
 
-      # puts sku, old_price, price, short_desc, full_desc, title, filename, category_ids, store_ids, yandex_market_export, '= = = = = = ='
-      # puts weight, weight_num, store_id, sku, purch_price, price, old_price, short_desc, title, filename, category_ids, availability, store_ids, '= = = = = = = ='
+      # puts purch_price, sku, barcode, store_id, price, short_desc, title, weight_num, filename, country_of_origin
+      # puts sku, old_price, price, short_desc, full_desc, title, filename, store_ids, yandex_market_export, '= = = = = = = ='
 
       case
       when /[^0-9]/.match(barcode)
