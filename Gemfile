@@ -11,7 +11,6 @@ gem 'ru_propisju'
 gem 'barby'
 gem 'semacode-ruby19'
 gem 'pdf-reader'
-gem 'heroku'
 gem 'platform-api'
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'

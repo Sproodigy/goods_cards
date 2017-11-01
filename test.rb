@@ -2,10 +2,10 @@
 
 # require 'axlsx'   # For create xlsx files
 # require 'simple-spreadsheet'
-# require 'http'
-# require 'open-uri'
-# require 'nokogiri'
-# require 'base64'
+require 'http'
+require 'open-uri'
+require 'nokogiri'
+require 'base64'
 require 'mechanize'
 require 'date'
 require 'json'
@@ -28,20 +28,20 @@ def get_bardahl_product_data
     i % 2 == 0 ? array_links << elem : next
   end
 
-  puts art = array_links[4].click.search('#art-value').text
-  puts manufacturing = array_links[4].click.search('.item-name h2').text.split.last
+  art = array_links[4].click.search('#art-value').text
+  manufacturing = array_links[4].click.search('.item-name h2').text.split.last
   full_desc = array_links[4].click.search('.item-text')
-  puts weight = array_links[4].click.search('.left span').text.rstrip
-  puts title = 'Bardahl ' + array_links[4].click.search('.item-name h1').text + " (#{weight})"
-  puts image_path = 'https://allbardahl.ru/' + "#{array_links[4].click.search('.item-image img src')}"
-  puts '- - - - - - - - - - - - - -'
+  weight = array_links[4].click.search('.left span').text.rstrip
+  title = 'Bardahl ' + array_links[4].click.search('.item-name h1').text + " (#{weight})"
+  image_path = array_links[4].click.search('.item-image img').first[:src]
+  '- - - - - - - - - - - - - -'
   { image_path: image_path}
 end
-get_bardahl_product_data
+# get_bardahl_product_data
 
-def get_bardahl_product_image(product_id)
-  product_data = get_lm_product_data_liquimoly_ru(product_id)
-  src = 'http://liquimoly.ru/' + product_data[:image_path]
+def get_bardahl_product_image
+  product_data = get_bardahl_product_data
+  src = 'https://allbardahl.ru' + product_data[:image_path]
   # name = get_lm_product_data(product_id)[2]
 
   content_type_data = File.extname(src)
@@ -49,8 +49,10 @@ def get_bardahl_product_image(product_id)
   image_base64_data = Base64.encode64(open(src) { |f| f.read })
   image = "data:#{content_type};base64,#{image_base64_data}"
 
-  {image: image, filename: "#{product_id}#{content_type_data}"}
+  {image: image, filename: File.basename(src).gsub(/-/, '_')}
 end
+
+get_bardahl_product_image
 
 # info = array_links.each do |link|
   # data = link.click

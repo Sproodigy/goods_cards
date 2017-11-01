@@ -250,7 +250,7 @@
 
       yandex_market_export = true   # For Extrastore
 
-      # puts sku, result[:image_path], '- - - - - - -'
+      puts result[:image_path], image, '- - - - - - -'
 
       # create_product_extrapost(purch_price, sku, barcode, store_id, price, short_desc, title, weight_num, image, filename, country_of_origin)
       # update_product_extrapost(purch_price, sku, barcode, store_id, price, short_desc, title, weight_num, image, filename, country_of_origin)
