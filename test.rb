@@ -10,6 +10,25 @@ require 'mechanize'
 require 'date'
 require 'json'
 
+def get_short_desc(title)
+  page = Nokogiri::HTML(HTTP.follow.get('https://allbardahl.ru/catalog/additives/').to_s)
+
+  data = Hash.new
+  ti_le = page.css('.catalog-item__name h4')
+  short_desc_data = page.css('.catalog-item__description p')
+  ti_le.each do |ti|
+    short_desc_data.each do |sh|
+      data[ti.text] = sh.text
+    end
+  end
+  short_desc = ''
+  data.each do |key, value|
+    if title.include?(key) then short_desc = value
+      puts short_desc
+    end
+  end
+end
+
 # Spare links
 # page  = agent.get("http://www.bardahlrussia.ru/")
 # page  = agent.get("https://oilbardahl.ru/avtomobili/maslo_v_dvigatel/")
@@ -27,7 +46,29 @@ def get_bardahl_product_data
   array_links
 end
 
-def get
+
+def checkdigit(barcode)
+  evens, odds = *barcode.scan(/\d/).map { |d| d.to_i }.partition.with_index { |d, i| (i&1).zero? }
+  (10 - ((odds.reduce(:+)) * 3 + evens.reduce(:+)) % 10) % 10
+end
+
+def barcode_from_product_art(art)
+  s = "32667201#{art}"
+  "#{s}#{checkdigit(s)}"
+end
+
+def get_bardahl_product_image(image_path)
+  product_data = get_bardahl_product_data
+  src = 'https://allbardahl.ru' + image_path.to_s
+
+  content_type_data = File.extname(src)
+  content_type = 'image/' + content_type_data[1,3]
+  image_base64_data = Base64.encode64(open(src) { |f| f.read })
+  image = "data:#{content_type};base64,#{image_base64_data}"
+
+  {image: image, filename: File.basename(src).gsub(/-/, '_')}
+end
+
   get_bardahl_product_data.map do |link|
     data = link.click
     manufacturing = data.search('.item-name h2').text.split.last
@@ -39,37 +80,11 @@ def get
     image_path = data.search('.item-image img').first[:src]
     store_id = 3
     country_of_origin = 'BE'
-    # barcode = barcode_from_product_art
-    # sku = barcode
-    data = {manufacturing: manufacturing,
-            art: art
-           }
+    barcode = barcode_from_product_art(art)
+    sku = barcode
+    image = get_bardahl_product_image(image_path)[:image]
+    filename  = get_bardahl_product_image(image_path)[:filename]
+    short_desc = get_short_desc(title)
   end
-end
-
-puts get
-
-
-def get_bardahl_product_image
-  product_data = get_bardahl_product_data
-  src = 'https://allbardahl.ru' + product_data[:image_path]
-
-  content_type_data = File.extname(src)
-  content_type = 'image/' + content_type_data[1,3]
-  image_base64_data = Base64.encode64(open(src) { |f| f.read })
-  image = "data:#{content_type};base64,#{image_base64_data}"
-
-  {image: image, filename: File.basename(src).gsub(/-/, '_')}
-end
-
-def barcode_from_product_art
-  s = "32667201#{get_bardahl_product_data[:art].gsub(/[^\d]/, ' ').rstrip}"
-  "#{s}#{checkdigit(s)}"
-end
-
-def checkdigit(barcode)
-  evens, odds = *barcode.scan(/\d/).map { |d| d.to_i }.partition.with_index { |d, i| (i&1).zero? }
-  (10 - ((odds.reduce(:+)) * 3 + evens.reduce(:+)) % 10) % 10
-end
 
 # array_links.each_with_index { |el, i| puts el, i }

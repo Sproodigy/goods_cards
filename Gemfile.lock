@@ -109,9 +109,6 @@ GEM
       hashery (~> 2.0)
       ruby-rc4
       ttfunk
-    pg (0.21.0)
-    pg (0.21.0-x64-mingw32)
-    pg (0.21.0-x86-mingw32)
     platform-api (2.1.0)
       heroics (~> 0.0.23)
       moneta (~> 0.8.1)
@@ -224,7 +221,6 @@ DEPENDENCIES
   jquery-rails
   listen (~> 3.0.5)
   pdf-reader
-  pg
   platform-api
   prawn
   prawn-table
