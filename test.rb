@@ -10,25 +10,6 @@ require 'mechanize'
 require 'date'
 require 'json'
 
-def get_short_desc(title)
-  page = Nokogiri::HTML(HTTP.follow.get('https://allbardahl.ru/catalog/additives/').to_s)
-
-  data = Hash.new
-  ti_le = page.css('.catalog-item__name h4')
-  short_desc_data = page.css('.catalog-item__description p')
-  ti_le.each do |ti|
-    short_desc_data.each do |sh|
-      data[ti.text] = sh.text
-    end
-  end
-  short_desc = ''
-  data.each do |key, value|
-    if title.include?(key) then short_desc = value
-      puts short_desc
-    end
-  end
-end
-
 # Spare links
 # page  = agent.get("http://www.bardahlrussia.ru/")
 # page  = agent.get("https://oilbardahl.ru/avtomobili/maslo_v_dvigatel/")
@@ -69,22 +50,25 @@ def get_bardahl_product_image(image_path)
   {image: image, filename: File.basename(src).gsub(/-/, '_')}
 end
 
-  get_bardahl_product_data.map do |link|
-    data = link.click
-    manufacturing = data.search('.item-name h2').text.split.last
-    next if manufacturing != 'Бельгия'
-    art = data.search('#art-value').text
-    full_desc = data.search('.item-text').to_s
-    weight = data.search('.left span').text.rstrip
-    title = 'Bardahl ' + data.search('.item-name h1').text + " (#{weight})"
-    image_path = data.search('.item-image img').first[:src]
-    store_id = 3
-    country_of_origin = 'BE'
-    barcode = barcode_from_product_art(art)
-    sku = barcode
-    image = get_bardahl_product_image(image_path)[:image]
-    filename  = get_bardahl_product_image(image_path)[:filename]
-    short_desc = get_short_desc(title)
-  end
-
+get_bardahl_product_data[0..3].each do |link|
+  data = link.click
+  manufacturing = data.search('.item-name h2').text.split.last
+  next if manufacturing != 'Бельгия'
+  art = data.search('#art-value').text
+  full_desc = data.search('.item-text').to_s
+  weight_1 = data.search('.left span').first.text.rstrip
+  weight_2 = data.search('.left span').last.text.rstrip
+  weight_1_num = weight_1.gsub(/[^\d]/, ' ').rstrip.to_f
+  weight_2_num = weight_2.gsub(/[^\d]/, ' ').rstrip.to_f
+  title_1 = 'Bardahl ' + data.search('.item-name h1').text + " (#{weight_1})"
+  title_2 = 'Bardahl ' + data.search('.item-name h1').text + " (#{weight_2})"
+  image_path = data.search('.item-image img').first[:src]
+  store_id = 3
+  country_of_origin = 'BE'
+  barcode = barcode_from_product_art(art)
+  sku = barcode
+  image = get_bardahl_product_image(image_path)[:image]
+  filename  = get_bardahl_product_image(image_path)[:filename]
+  puts '- - - - - - - - - -'
+end
 # array_links.each_with_index { |el, i| puts el, i }

@@ -1,5 +1,5 @@
 # encoding: utf-8
-
+require 'mechanize'
 require 'simple-spreadsheet'
 require 'http'
 require 'open-uri'
@@ -7,27 +7,36 @@ require 'nokogiri'
 require 'base64'
 require 'json'
 
-def get_suprotec_product_data(name)
-  # page = Nokogiri::HTML(HTTP.follow.get("https://berg.ru/article/#{product_id}").to_s)
-  # page = Nokogiri::HTML(HTTP.follow.get("https://berg.ru/search/step2?search=#{product_id}&brand=BARDAHL").to_s)
-  page = Nokogiri::HTML(HTTP.follow.get("https://suprotecshop.ru/#{name}").to_s)
-
-  {
-    art: page.css('.product-intro__addition-item span').first&.content.to_s,
-
-    full_desc: page.css('.product-tabs__content-pane').to_s,
-    title: page.css('.content__header').first&.content.to_s,
-
-    price_new: page.css('.product-price__main .product-price__item-value').first&.content.to_s,
-    price_old: page.css('.product-price__old .product-price__item-value').first&.content.to_s,
-
-    image_path: page.css('.product-photo a').first[:href]
-
-    # title: page.css('.two-thirds h1.headline strong').first&.content&.to_s,
-    # image_path: (page.css('.two-thirds img').first[:src] unless page.css('.two-thirds img').first.nil?),
-    # full_desc: page.css('.half-page').first
-  }
+def get_suprotec_product_data
+  agent = Mechanize.new
+  page = agent.get('https://suprotec.ru/produktsiya-suprotec/')
+  review_links = page.links_with(href: %r{/\w+})
+  # puts review_links.inspect
+  # puts review_links.reject { |link| link.text.include?('Супротек')}
+  review_links = review_links.reject do |link|
+    puts parent_classes = link.node.parent['class'].split
+    parent_classes.delete_if? { |pc| pc.text != 'item-title' }
+  end
+  # puts review_links
 end
+
+# get_suprotec_product_data
+#   {
+#     art: page.css('.product-intro__addition-item span').first&.content.to_s,
+#
+#     full_desc: page.css('.product-tabs__content-pane').to_s,
+#     title: page.css('.content__header').first&.content.to_s,
+#
+#     price_new: page.css('.product-price__main .product-price__item-value').first&.content.to_s,
+#     price_old: page.css('.product-price__old .product-price__item-value').first&.content.to_s,
+#
+#     image_path: page.css('.product-photo a').first[:href]
+#
+#     # title: page.css('.two-thirds h1.headline strong').first&.content&.to_s,
+#     # image_path: (page.css('.two-thirds img').first[:src] unless page.css('.two-thirds img').first.nil?),
+#     # full_desc: page.css('.half-page').first
+#   }
+# end
 
 def get_suprotec_product_image(name)
 
@@ -99,7 +108,7 @@ end
 
   array_of_names.each do |name|
 
-    result = get_suprotec_product_data(name)
+    result = get_suprotec_product_data
 
     title = result[:title]
     full_desc = result[:full_desc]
