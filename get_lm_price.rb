@@ -35,7 +35,7 @@
 
   def get_purchase_price(product_art)
   # Also supports csv, csvt and tsv formats
-    s = SimpleSpreadsheet::Workbook.read('app/assets/prices/Price_LM_02.08.2017.xlsx')
+    s = SimpleSpreadsheet::Workbook.read('app/assets/prices/Price_LM_15_11_2017.xlsx')
     s.selected_sheet = s.sheets[0]
     s.first_row.upto(s.last_row) do |line|
       data_art = s.cell(line, 4).to_s
@@ -89,8 +89,13 @@
   end
 
   def barcode_from_product_art(product_art)
-    s = "41004200#{product_art}"
-    "#{s}#{checkdigit(s)}"
+    if product_art.length == 5
+      s = "4607071#{product_art}"
+      "#{s}#{checkdigit(s)}"
+    else
+      s = "41004200#{product_art}"
+      "#{s}#{checkdigit(s)}"
+    end
   end
 
   def checkdigit(barcode)
@@ -116,19 +121,19 @@
                                         }})
   end
 
-  def update_product_extrapost(purch_price, sku, barcode, store_id, price, short_desc, title, weight_num, image, filename, country_of_origin)
+  def update_product_extrapost(purch_price, sku, barcode, price, image, title)
     response = HTTP.headers(authorization: "Token e541dfef128f4f93cbdb09b320ea3fb7").put("https://xp.extrapost.ru/api/v1/products/#{barcode}",
                         json: {product: {purchase_price: purch_price,
                                          sku: sku,
                                          barcode: barcode,
-                                         store_id: store_id,
+                                        #  store_id: store_id,
                                          price: price,
-                                         description: short_desc,
+                                        #  description: short_desc,
                                          title: title,
-                                         weight: weight_num,
-                                         image: image,
-                                         image_file_name: filename,
-                                         country_of_origin: country_of_origin
+                                        #  weight: weight_num,
+                                         image: image
+                                        #  image_file_name: filename,
+                                        #  country_of_origin: country_of_origin
                                         }})
   end
 
@@ -149,26 +154,26 @@
                                         }})
   end
 
-  def update_product_extrastore(sku, old_price, price, short_desc, full_desc, title, image, filename, store_ids, yandex_market_export)
+  def update_product_extrastore(sku, old_price, price)
     page = HTTP.headers(authorization: "Token $2a$10$h1Of14AYJkYa5kpiKJTQ7uw/r96shHcgswG/J6rcuaQJAtgFLpjYK").put("http://extrastore.org/api/v1/products/#{sku}",
                        json: {product: { sku: sku,
                                          price: price,
-                                         description: short_desc,
-                                         title: title,
-                                         image: image,
-                                         image_file_name: filename,
-                                         long_description: full_desc,
-                                         store_ids: store_ids,
-                                         old_price: old_price,
-                                         yandex_market_export: yandex_market_export
+                                        #  description: short_desc,
+                                        #  title: title,
+                                        #  image: image,
+                                        #  image_file_name: filename,
+                                        #  long_description: full_desc,
+                                        #  store_ids: store_ids,
+                                         old_price: old_price
+                                        #  yandex_market_export: yandex_market_export
                                         }})
   end
 
   # @src_for_csv = []
   art_count = []
   start = Time.now
-  array_of_articles = [(5116..5116)]
-  # array_of_articles = [(1005..4800), (5100..5320), (6050..6970), (7050..7950), (8000..9100), (20624..20780), (25000..25070), (39000..39010), (77160..77170)]
+  # array_of_articles = [(1007..1007)]
+  array_of_articles = [(1005..4800), (5100..5320), (6050..6970), (7050..7950), (8000..9100), (20624..20780), (25000..25070), (39000..39010), (77160..77170)]
   array_of_articles.each do |range|
     range.each do |product_id|   # Art from 1007 to 77169
 
@@ -209,19 +214,19 @@
         puts "short_desc length > 64    #{art}"
       end
 
-      if short_desc.length > 64   # For Extrastore
-        data = short_desc[0..63].split(' ')
-        data.pop
-        short_desc = data.join(' ').rstrip + '.'
-      end
-
-      if title.downcase.include?('marine')
-        category_ids = [1282, 1201]
-      elsif title.downcase.include?('pro-')
-        category_ids = [1283, 1201]
-      else
-        category_ids = [1201]
-      end
+      # if short_desc.length > 64   # For Extrastore
+      #   data = short_desc[0..63].split(' ')
+      #   data.pop
+      #   short_desc = data.join(' ').rstrip + '.'
+      # end
+      #
+      # if title.downcase.include?('marine')
+      #   category_ids = [1282, 1201]
+      # elsif title.downcase.include?('pro-')
+      #   category_ids = [1283, 1201]
+      # else
+      #   category_ids = [1201]
+      # end
 
       image_result = get_lm_product_image(product_id)
       image = image_result[:image]
@@ -236,7 +241,7 @@
       purch_price = get_purchase_price(art)   # For Extrapost
       next if purch_price <= 30 unless art == "5116"
 
-      price = (purch_price * 1.357).round
+      price = (purch_price * 1.356).round
 
       old_price = (purch_price * 1.531).round   # For Extrastore
 
@@ -250,15 +255,16 @@
 
       yandex_market_export = true   # For Extrastore
 
-      puts result[:image_path], image, '- - - - - - -'
+      # puts result[:image_path], image, '- - - - - - -'
 
       # create_product_extrapost(purch_price, sku, barcode, store_id, price, short_desc, title, weight_num, image, filename, country_of_origin)
-      # update_product_extrapost(purch_price, sku, barcode, store_id, price, short_desc, title, weight_num, image, filename, country_of_origin)
+      update_product_extrapost(purch_price, sku, barcode, price, image, title)
       # create_product_extrastore(sku, old_price, price, short_desc, full_desc, title, image, filename, category_ids, store_ids, yandex_market_export, availability)
-      # update_product_extrastore(sku, old_price, price, short_desc, full_desc, title, image, filename, store_ids, yandex_market_export)
+      # update_product_extrastore(sku, old_price, price)
 
       # puts purch_price, sku, barcode, store_id, price, short_desc, title, weight_num, filename, country_of_origin
       # puts sku, old_price, price, short_desc, full_desc, title, filename, store_ids, yandex_market_export, '= = = = = = = ='
+      puts "Title:   #{title}", "Barcode:   #{barcode}", "Old price:   #{old_price}", "Price:   #{price}", "Purch price:   #{purch_price}", "Art:   #{art}", '- - - - - - - - - - - - - -'
 
       case
       when /[^0-9]/.match(barcode)
@@ -278,14 +284,12 @@
       when /[^0-9.,]/.match(price.to_s)
         puts "price is NAN   #{art}"
       when short_desc.length > 64
-        puts "short_desc length > 64    #{art}"
-      when sku.length > 32
         puts "sku > 32   #{art}"
       end
     end
   end
 
-  puts 'Number of goods:   ' + "#{art_count.size}", '- - - - -'
+  puts 'Number of goods:   ' + "#{art_count.size}"
   finish = Time.now
   full_time = (finish - start)
   if full_time >= 3600

@@ -1,6 +1,1 @@
-module Mazda
-  def make_mazda
-    puts 'Объём двигателя:'
-    engine_volume = gets.chomp
-  end
-end
+puts 'e9256bc8-7551-11e7-7a6c-d2a900033e8e' == 'e9256074-7551-11e7-7a6c-d2a900033e8c'
