@@ -62,6 +62,7 @@
       end
 
       data_full = data_1.merge!(data_2).merge!(data_3)
+      # puts data_full
       data_full.each do |key, value|
         if key == product_art then value = pur_price
           return pur_price.to_f
@@ -92,6 +93,10 @@
     if product_art.length == 5
       s = "4607071#{product_art}"
       "#{s}#{checkdigit(s)}"
+      if product_art.start_with?('25')
+        s = "4100420#{product_art}"
+        "#{s}#{checkdigit(s)}"
+      end
     else
       s = "41004200#{product_art}"
       "#{s}#{checkdigit(s)}"
@@ -172,14 +177,20 @@
   # @src_for_csv = []
   art_count = []
   start = Time.now
-  # array_of_articles = [(1007..1007)]
-  array_of_articles = [(1005..4800), (5100..5320), (6050..6970), (7050..7950), (8000..9100), (20624..20780), (25000..25070), (39000..39010), (77160..77170)]
+  array_of_articles = [(25000..25070)]
+  # array_of_articles = [(369), (649..700), (1007..4800), (5100..5320), (6050..6970), (7050..7950), (8000..9100), (20624..20780), (25000..25070), (39000..39010), (77160..77169)]
   array_of_articles.each do |range|
-    range.each do |product_id|   # Art from 1007 to 77169
+    range.each do |product_id|   # Art from 1007 to 77169   Атрикулы, начинающиеся с нуля, изменяются вручную.
+
+      if product_id.to_s.length == 3
+        product_id = "00#{product_id}"
+      elsif product_id == (1120 || 1164 || 2006 || 2009 || 2007)
+        product_id = "0#{product_id}"
+      end
 
       result = get_lm_product_data_liquimoly_ru(product_id)
       next if result[:sku].nil?
-      # next if result[:sku].include?('*')
+      next if result[:sku].include?('*')
       art = result[:sku].rpartition(' ').last
       art_count << art
 
@@ -220,13 +231,13 @@
       #   short_desc = data.join(' ').rstrip + '.'
       # end
       #
-      # if title.downcase.include?('marine')
-      #   category_ids = [1282, 1201]
-      # elsif title.downcase.include?('pro-')
-      #   category_ids = [1283, 1201]
+      if title.downcase.include?('marine')
+        category_ids = [1282, 1201]
+      elsif title.downcase.include?('pro-')
+        category_ids = [1283, 1201]
       # else
       #   category_ids = [1201]
-      # end
+      end
 
       image_result = get_lm_product_image(product_id)
       image = image_result[:image]
@@ -258,13 +269,13 @@
       # puts result[:image_path], image, '- - - - - - -'
 
       # create_product_extrapost(purch_price, sku, barcode, store_id, price, short_desc, title, weight_num, image, filename, country_of_origin)
-      update_product_extrapost(purch_price, sku, barcode, price, image, title)
+      # update_product_extrapost(purch_price, sku, barcode, price, image, title)
       # create_product_extrastore(sku, old_price, price, short_desc, full_desc, title, image, filename, category_ids, store_ids, yandex_market_export, availability)
       # update_product_extrastore(sku, old_price, price)
 
       # puts purch_price, sku, barcode, store_id, price, short_desc, title, weight_num, filename, country_of_origin
       # puts sku, old_price, price, short_desc, full_desc, title, filename, store_ids, yandex_market_export, '= = = = = = = ='
-      puts "Title:   #{title}", "Barcode:   #{barcode}", "Old price:   #{old_price}", "Price:   #{price}", "Purch price:   #{purch_price}", "Art:   #{art}", '- - - - - - - - - - - - - -'
+      # puts "Title:   #{title}", "Barcode:   #{barcode}", "Old price:   #{old_price}", "Price:   #{price}", "Purch price:   #{purch_price}", "Art:   #{art}", '- - - - - - - - - - - - - -'
 
       case
       when /[^0-9]/.match(barcode)
@@ -303,6 +314,7 @@
     puts "#{min} min   #{sec} sec"
   else
     puts full_time.round.to_s + ' sec'
+    puts full_time
   end
 
   # # To add a header, the columns should be written monotonously with the header (each data column separately)
