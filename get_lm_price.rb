@@ -96,6 +96,9 @@
       if product_art.start_with?('25')
         s = "4100420#{product_art}"
         "#{s}#{checkdigit(s)}"
+      elsif product_art.start_with?('0')
+        s = "4606746#{product_art}"
+        "#{s}#{checkdigit(s)}"
       end
     else
       s = "41004200#{product_art}"
@@ -126,7 +129,7 @@
                                         }})
   end
 
-  def update_product_extrapost(purch_price, sku, barcode, price, image, title)
+  def update_product_extrapost(purch_price, sku, barcode, price, image)
     response = HTTP.headers(authorization: "Token e541dfef128f4f93cbdb09b320ea3fb7").put("https://xp.extrapost.ru/api/v1/products/#{barcode}",
                         json: {product: {purchase_price: purch_price,
                                          sku: sku,
@@ -134,7 +137,7 @@
                                         #  store_id: store_id,
                                          price: price,
                                         #  description: short_desc,
-                                         title: title,
+                                        #  title: title,
                                         #  weight: weight_num,
                                          image: image
                                         #  image_file_name: filename,
@@ -178,14 +181,17 @@
   art_count = []
   start = Time.now
   array_of_articles = [(25000..25070)]
-  # array_of_articles = [(369), (649..700), (1007..4800), (5100..5320), (6050..6970), (7050..7950), (8000..9100), (20624..20780), (25000..25070), (39000..39010), (77160..77169)]
+  # array_of_articles = [(369..369), (649..700), (1120..1267), (2006..2009), (4775..4775)]
+  # array_of_articles = [(369..700), (1007..4800), (5100..5320), (6050..6970), (7050..7950), (8000..9100), (20624..20780), (25000..25070), (39000..39010), (77160..77169)]
   array_of_articles.each do |range|
-    range.each do |product_id|   # Art from 1007 to 77169   Атрикулы, начинающиеся с нуля, изменяются вручную.
+    range.each do |product_id|   # Art from 1007 to 77169
+
 
       if product_id.to_s.length == 3
         product_id = "00#{product_id}"
-      elsif product_id == (1120 || 1164 || 2006 || 2009 || 2007)
-        product_id = "0#{product_id}"
+      # Включать отдельно для этой категории товаров.
+      # elsif product_id == 1120 || 1164 || 1267 || 2006 || 2007 || 2009 || 4775
+      #   product_id = "0#{product_id}"
       end
 
       result = get_lm_product_data_liquimoly_ru(product_id)
@@ -231,13 +237,14 @@
       #   short_desc = data.join(' ').rstrip + '.'
       # end
       #
-      if title.downcase.include?('marine')
-        category_ids = [1282, 1201]
-      elsif title.downcase.include?('pro-')
-        category_ids = [1283, 1201]
+      # if title.downcase.include?('marine')
+      #   category_ids = [1282, 1201]
+      # elsif title.downcase.include?('pro-')
+      #   category_ids = [1283, 1201]
       # else
       #   category_ids = [1201]
-      end
+      # end
+
 
       image_result = get_lm_product_image(product_id)
       image = image_result[:image]
@@ -269,13 +276,13 @@
       # puts result[:image_path], image, '- - - - - - -'
 
       # create_product_extrapost(purch_price, sku, barcode, store_id, price, short_desc, title, weight_num, image, filename, country_of_origin)
-      # update_product_extrapost(purch_price, sku, barcode, price, image, title)
+      # update_product_extrapost(purch_price, sku, barcode, price, image)
       # create_product_extrastore(sku, old_price, price, short_desc, full_desc, title, image, filename, category_ids, store_ids, yandex_market_export, availability)
-      # update_product_extrastore(sku, old_price, price)
+      update_product_extrastore(sku, old_price, price)
 
       # puts purch_price, sku, barcode, store_id, price, short_desc, title, weight_num, filename, country_of_origin
       # puts sku, old_price, price, short_desc, full_desc, title, filename, store_ids, yandex_market_export, '= = = = = = = ='
-      # puts "Title:   #{title}", "Barcode:   #{barcode}", "Old price:   #{old_price}", "Price:   #{price}", "Purch price:   #{purch_price}", "Art:   #{art}", '- - - - - - - - - - - - - -'
+      puts "Title:   #{title}", "Barcode:   #{barcode}", "Old price:   #{old_price}", "Price:   #{price}", "Purch price:   #{purch_price}", "Art:   #{art}", '- - - - - - - - - - - - - -'
 
       case
       when /[^0-9]/.match(barcode)
@@ -304,18 +311,19 @@
   finish = Time.now
   full_time = (finish - start)
   if full_time >= 3600
-    hours = (full_time/3600).round
-    min = (full_time/60 - hours*60).round
-    sec = (full_time - (min*60 + hours*3600)).round
+    hours = (full_time / 3600).floor
+    min = (full_time / 60 - hours * 60).floor
+    sec = (full_time - (min * 60 + hours * 3600))
     puts "#{hours} hours   #{min} min   #{sec} sec"
   elsif full_time >= 60
-    min = (full_time/60).round
-    sec = (full_time - min*60).round.to_s
+    min = (full_time / 60).floor
+    sec = (full_time - min * 60)
     puts "#{min} min   #{sec} sec"
   else
     puts full_time.round.to_s + ' sec'
-    puts full_time
   end
+
+  puts "Full time:   #{full_time}"
 
   # # To add a header, the columns should be written monotonously with the header (each data column separately)
   #
