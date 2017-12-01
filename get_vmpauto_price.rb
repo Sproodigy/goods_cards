@@ -11,31 +11,6 @@
 
   start = Time.now
 
-  def get_purchase_price
-  # Also supports csv, csvt and tsv formats
-    s = SimpleSpreadsheet::Workbook.read('app/assets/prices/Price_VMPAuto_Samara.xlsx')
-    s.selected_sheet = s.sheets[0]
-    s.first_row.upto(s.last_row) do |line|
-      barcode = s.cell(line, 8).to_i.to_s
-      # art_count << barcode
-      if barcode.length < 12
-        puts "Barcode length < 12"
-        next
-      end
-
-      if barcode
-        sku = barcode
-        art = s.cell(line, 1).to_i.to_s
-        title = s.cell(line, 2) + " (art: #{art})"
-        purch_price = s.cell(line, 3)
-        price = s.cell(line, 4)
-      end
-      puts "Title:   #{title}", "Barcode:   #{barcode}", "Price:   #{price}", "Purch price:   #{purch_price}", '- - - - - - - - - - - - - -'
-    end
-  end
-
-get_purchase_price
-
   def create_product_extrapost(purch_price, sku, barcode, store_id, price, short_desc, title, weight_num, image, filename, country_of_origin)
     page = HTTP.headers(authorization: "Token e541dfef128f4f93cbdb09b320ea3fb7").post("https://xp.extrapost.ru/api/v1/products/",
                        json: {product: { purchase_price: purch_price,
@@ -52,7 +27,7 @@ get_purchase_price
                                         }})
   end
 
-  def update_product_extrapost(purch_price, sku, barcode, price, image, title)
+  def update_product_extrapost(purch_price, sku, barcode, price, title, weight)
     response = HTTP.headers(authorization: "Token e541dfef128f4f93cbdb09b320ea3fb7").put("https://xp.extrapost.ru/api/v1/products/#{barcode}",
                         json: {product: {purchase_price: purch_price,
                                          sku: sku,
@@ -61,8 +36,8 @@ get_purchase_price
                                          price: price,
                                         #  description: short_desc,
                                          title: title,
-                                        #  weight: weight_num,
-                                         image: image
+                                         weight: weight_num
+                                         # image: image
                                         #  image_file_name: filename,
                                         #  country_of_origin: country_of_origin
                                         }})
@@ -99,6 +74,34 @@ get_purchase_price
                                         #  yandex_market_export: yandex_market_export
                                         }})
   end
+
+
+    # Also supports csv, csvt and tsv formats
+      s = SimpleSpreadsheet::Workbook.read('app/assets/prices/Price_VMPAuto_Samara.xlsx')
+      s.selected_sheet = s.sheets[0]
+      art_count = []
+      s.first_row.upto(s.last_row) do |line|
+        barcode = s.cell(line, 9).to_i.to_s
+        art_count << barcode
+        if barcode.length < 12
+          puts "Barcode length < 12"
+          next
+        end
+
+        if barcode
+          sku = barcode
+          art = s.cell(line, 1).to_i.to_s
+          weight = s.cell(line, 3)
+          weight_num = s.cell(line, 3).gsub(/[^\d]/, '').to_i
+          title = s.cell(line, 2) + " (#{weight})" + " (art: #{art})"
+          purch_price = s.cell(line, 4)
+          price = s.cell(line, 5)
+        end
+        puts "Weight:   #{weight_num}", "Title:   #{title}", "Barcode:   #{barcode}", "Price:   #{price}", "Purch price:   #{purch_price}", '- - - - - - - - - - - - - -'
+        # update_product_extrapost(purch_price, sku, barcode, price, title, weight)
+      end
+
+  puts "Number of goods:   #{art_count.size}"
 
   finish = Time.now
   full_time = (finish - start)
