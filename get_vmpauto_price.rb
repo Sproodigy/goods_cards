@@ -27,15 +27,15 @@
                                         }})
   end
 
-  def update_product_extrapost(purch_price, sku, barcode, price, title, weight)
+  def update_product_extrapost(purch_price, barcode, weight_num)
     response = HTTP.headers(authorization: "Token e541dfef128f4f93cbdb09b320ea3fb7").put("https://xp.extrapost.ru/api/v1/products/#{barcode}",
                         json: {product: {purchase_price: purch_price,
-                                         sku: sku,
+                                         # sku: sku,
                                          barcode: barcode,
                                         #  store_id: store_id,
-                                         price: price,
+                                         # price: price,
                                         #  description: short_desc,
-                                         title: title,
+                                         # title: title,
                                          weight: weight_num
                                          # image: image
                                         #  image_file_name: filename,
@@ -60,12 +60,12 @@
                                         }})
   end
 
-  def update_product_extrastore(sku, old_price, price)
+  def update_product_extrastore(sku, price, title, old_price)
     page = HTTP.headers(authorization: "Token $2a$10$h1Of14AYJkYa5kpiKJTQ7uw/r96shHcgswG/J6rcuaQJAtgFLpjYK").put("http://extrastore.org/api/v1/products/#{sku}",
                        json: {product: { sku: sku,
                                          price: price,
                                         #  description: short_desc,
-                                        #  title: title,
+                                         title: title,
                                         #  image: image,
                                         #  image_file_name: filename,
                                         #  long_description: full_desc,
@@ -81,8 +81,9 @@
       s.selected_sheet = s.sheets[0]
       art_count = []
       s.first_row.upto(s.last_row) do |line|
-        barcode = s.cell(line, 9).to_i.to_s
+        barcode = s.cell(line, 10).to_i.to_s
         art_count << barcode
+
         if barcode.length < 12
           puts "Barcode length < 12"
           next
@@ -92,13 +93,22 @@
           sku = barcode
           art = s.cell(line, 1).to_i.to_s
           weight = s.cell(line, 3)
-          weight_num = s.cell(line, 3).gsub(/[^\d]/, '').to_i
+
+          if weight.include?('мл') || weight.include?('гр')
+            weight_num = (s.cell(line, 3).gsub(/[^\d]/, '').to_f) / 1000
+          else
+            weight_num = s.cell(line, 3).gsub(/[^\d]/, '').to_i
+          end
+
           title = s.cell(line, 2) + " (#{weight})" + " (art: #{art})"
           purch_price = s.cell(line, 4)
           price = s.cell(line, 5)
+          old_price = s.cell(line, 6).round
         end
-        puts "Weight:   #{weight_num}", "Title:   #{title}", "Barcode:   #{barcode}", "Price:   #{price}", "Purch price:   #{purch_price}", '- - - - - - - - - - - - - -'
-        # update_product_extrapost(purch_price, sku, barcode, price, title, weight)
+        puts "Weight:   #{weight_num}", "Title:   #{title}", "Barcode:   #{barcode}", "Price:   #{price}", "Purch price:   #{purch_price}", "Old price:   #{old_price}", '- - - - - - - - - - - - - -'
+        update_product_extrapost(purch_price, barcode, weight_num)
+        # update_product_extrapost(purch_price, sku, barcode, price, title, weight_num)
+        # update_product_extrastore(sku, price, title, old_price)
       end
 
   puts "Number of goods:   #{art_count.size}"
