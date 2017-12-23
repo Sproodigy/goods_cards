@@ -12,13 +12,13 @@ gem 'barby'
 gem 'semacode-ruby19'
 gem 'pdf-reader'
 gem 'platform-api'
-gem 'csv'
+# gem 'csv'
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
 gem 'rails', '~> 5.0.4'
 # Use sqlite3 as the database for Active Record
-gem 'sqlite3'
-gem 'pg'
+# gem 'sqlite3'
+# gem 'pg'
 # Use Puma as the app server
 gem 'puma', '~> 3.0'
 # Use SCSS for stylesheets
