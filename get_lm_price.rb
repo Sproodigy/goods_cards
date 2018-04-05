@@ -1,8 +1,12 @@
   # encoding: utf-8
 
   # require 'axlsx'   # For create xlsx files
+<<<<<<< HEAD
   require 'openssl'
   require 'rubyXL'
+=======
+  # require 'rubyXL'
+>>>>>>> af274cc0b3937b76952fe376ea02aa056de5c9b2
   require 'roo-xls'
   require 'simple-spreadsheet'
   # require 'simple-xls'
@@ -102,10 +106,14 @@
 
   def barcode_from_product_art(product_art)
     if product_art.length == 5
-      s = "4607071#{product_art}"
-      "#{s}#{checkdigit(s)}"
-      if product_art.start_with?('25')
+      if product_art.start_with?('77')
+        s = "4607071#{product_art}"
+        "#{s}#{checkdigit(s)}"
+      elsif product_art.start_with?('25')
         s = "4100420#{product_art}"
+        "#{s}#{checkdigit(s)}"
+      elsif product_art.start_with?('20') || product_art.start_with?('39')
+        s = "41004200#{product_art}"
         "#{s}#{checkdigit(s)}"
       elsif product_art.start_with?('0')
         s = "4606746#{product_art}"
@@ -172,17 +180,17 @@
                                         }})
   end
 
-  def update_product_extrastore(sku, old_price, price)
+  def update_product_extrastore(sku, title)
     page = HTTP.headers(authorization: "Token $2a$10$h1Of14AYJkYa5kpiKJTQ7uw/r96shHcgswG/J6rcuaQJAtgFLpjYK").put("http://extrastore.org/api/v1/products/#{sku}",
                        json: {product: { sku: sku,
-                                         price: price,
+                                        #  price: price,
                                         #  description: short_desc,
-                                        #  title: title,
+                                         title: title
                                         #  image: image,
                                         #  image_file_name: filename,
                                         #  long_description: full_desc,
                                         #  store_ids: store_ids,
-                                         old_price: old_price
+                                        #  old_price: old_price
                                         #  yandex_market_export: yandex_market_export
                                         }})
   end
@@ -190,8 +198,13 @@
   # @src_for_csv = []
   art_count = []
   start = Time.now
+<<<<<<< HEAD
   # array_of_articles = [(25000..25010)]
   array_of_articles = [(369..369), (649..700), (1120..1267), (2006..2009), (4775..4775)]
+=======
+  # array_of_articles = [(25000..25070)]
+  array_of_articles = [(77160..77169)]
+>>>>>>> af274cc0b3937b76952fe376ea02aa056de5c9b2
   # array_of_articles = [(369..700), (1007..4800), (5100..5320), (6050..6970), (7050..7950), (8000..9100), (20624..20780), (25000..25070), (39000..39010), (77160..77169)]
   # array_of_articles = [(20624..20780), (25000..25070), (39000..39010), (77160..77169)]
   array_of_articles.each do |range|
@@ -228,18 +241,17 @@
       if /[0-9]-[A-Z]/.match(result[:short_desc])
         data = result[:short_desc].partition(/[0-9]-[A-Z]/)
         short_desc = data[0].to_s.lstrip.rstrip.squeeze(" ") + '.'
-        title ='Liqui Moly ' + data[1..data.length].join.squeeze(" ") + weight + " (art: #{art})"
-
+        title ='Liqui Moly ' + data[1..data.length].join.squeeze(" ") + " — #{short_desc.chop}" + weight + " (art: #{art})"
         if /[A-Z]/.match(short_desc)
           data_array = short_desc.split
           data_title = data_array.pop
           short_desc = data_array.join(' ') + '.'
-          title ='Liqui Moly ' + data_title.gsub(/[.]/, ' ').rstrip + data[1..data.length].join.squeeze(" ") + weight + " (art: #{art})"
+          title ='Liqui Moly ' + data_title.gsub(/[.]/, ' ').rstrip + data[1..data.length].join.squeeze(" ") + " — #{short_desc.chop}" + weight + " (art: #{art})"
         end
       else
         data = result[:short_desc].partition(/[A-Z]/)
         short_desc = data[0].to_s.rstrip.lstrip.squeeze(" ") + '.'
-        title = 'Liqui Moly ' + data[1..data.length].join.squeeze(" ") + weight + " (art: #{art})"
+        title = 'Liqui Moly ' + data[1..data.length].join.squeeze(" ") + " — #{short_desc.chop}" + weight + " (art: #{art})"
       end
 
       case
@@ -294,8 +306,13 @@
 
       # create_product_extrapost(purch_price, sku, barcode, store_id, price, short_desc, title, weight_num, image, filename, country_of_origin)
       # update_product_extrapost(purch_price, sku, barcode, price, image)
+<<<<<<< HEAD
       # create_product_extrastore(sku, old_price, price, short_desc, full_desc, title, image, filename, store_ids, yandex_market_export, availability)
       # update_product_extrastore(sku, old_price, price)
+=======
+      # create_product_extrastore(sku, old_price, price, short_desc, full_desc, title, image, filename, category_ids, store_ids, yandex_market_export, availability)
+      update_product_extrastore(sku, title)
+>>>>>>> af274cc0b3937b76952fe376ea02aa056de5c9b2
 
       # puts purch_price, sku, barcode, store_id, price, short_desc, title, weight_num, filename, country_of_origin
       # puts sku, old_price, price, short_desc, full_desc, title, filename, store_ids, yandex_market_export, '= = = = = = = ='
@@ -340,8 +357,6 @@
   else
     puts full_time.round.to_s + ' sec'
   end
-
-  puts "Full time:   #{full_time}"
 
   # # To add a header, the columns should be written monotonously with the header (each data column separately)
   #
