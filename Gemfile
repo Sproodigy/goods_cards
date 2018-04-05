@@ -12,7 +12,7 @@ gem 'barby'
 gem 'semacode-ruby19'
 gem 'pdf-reader'
 gem 'platform-api'
-gem 'csv'
+# gem 'csv'
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
 gem 'rails', '~> 5.0.4'

@@ -1,12 +1,13 @@
   # encoding: utf-8
 
   # require 'axlsx'   # For create xlsx files
+  require 'openssl'
   require 'rubyXL'
   require 'roo-xls'
   require 'simple-spreadsheet'
   # require 'simple-xls'
   # require 'httparty'
-  require 'csv'
+  # require 'csv'
   # require 'uri'
   # require 'net/http'
   require 'http'
@@ -17,9 +18,10 @@
   require 'active_support/core_ext/string/access'
 
   def get_lm_product_data_liquimoly_ru(product_id)
-  # Load page html and parse it with Nokogiri
-    page = Nokogiri::HTML(HTTP.follow.get("http://liquimoly.ru/item/#{product_id}.html").to_s)
-  # Select html element from page and print it
+    ctx = OpenSSL::SSL::SSLContext.new
+    ctx.verify_mode = OpenSSL::SSL::VERIFY_NONE
+    page = Nokogiri::HTML(HTTP.follow.get("http://liquimoly.ru/item/#{product_id}.html", :ssl_context => ctx).to_s)
+
     {
     sku: page.css('.card_desc strong').first&.content,
 
@@ -35,59 +37,68 @@
 
   def get_purchase_price(product_art)
   # Also supports csv, csvt and tsv formats
-    s = SimpleSpreadsheet::Workbook.read('app/assets/prices/Price_LM_15_11_2017.xlsx')
+    s = SimpleSpreadsheet::Workbook.read('app/assets/prices/Price_LM_02_04_2018.xlsx')
     s.selected_sheet = s.sheets[0]
     s.first_row.upto(s.last_row) do |line|
-      data_art = s.cell(line, 4).to_s
-      pur_price = s.cell(line, 8).to_s
-      data_1 = Hash.new
-      data_2 = Hash.new
-      data_3 = Hash.new
+      art = s.cell(line, 4).to_s
+      next if art == ''
+      next if art.match(/[A-Za-zА-Яа-я]/)
+      next if art.include?('*')
 
-      next if data_art == nil
-      next if /[^0-9\/*]/.match(data_art.to_s)
-
-      if data_art.to_s.include?('/')
-        double_art = data_art.to_s.gsub(/[\/]/, ' ').partition(' ')
-        double_art.each do |art|
-          next if art == ' '
-          art_end = art.gsub(/[^0-9]/, '')
-          data_1[art_end] = pur_price
-        end
-      elsif data_art.to_s.include?('*')
-        data_3[data_art] = pur_price
-      else
-        art_end = data_art.to_s.gsub(/[^0-9]/, '')
-        data_2[art_end] = pur_price
+      if art.include?('/')
+        art = art.split('/')[0]
       end
-
-      data_full = data_1.merge!(data_2).merge!(data_3)
-      # puts data_full
-      data_full.each do |key, value|
-        if key == product_art then value = pur_price
-          return pur_price.to_f
-        end
-      end
+      # data_art = s.cell(line, 4).to_s
+      # pur_price = s.cell(line, 8).to_s
+      # art = s.cell(line, 4).to_i.to_s
+      # data_1 = Hash.new
+      # data_2 = Hash.new
+      # data_3 = Hash.new
+      #
+      # next if data_art == nil
+      # next if /[^0-9\/*]/.match(data_art.to_s)
+      #
+      # if data_art.to_s.include?('/')
+      #   double_art = data_art.to_s.gsub(/[\/]/, ' ').partition(' ')
+      #   double_art.each do |art|
+      #     next if art == ' '
+      #     art_end = art.gsub(/[^0-9]/, '')
+      #     data_1[art_end] = pur_price
+      #   end
+      # elsif data_art.to_s.include?('*')
+      #   data_3[data_art] = pur_price
+      # else
+      #   art_end = data_art.to_s.gsub(/[^0-9]/, '')
+      #   data_2[art_end] = pur_price
+      # end
+      #
+      # data_full = data_1.merge!(data_2).merge!(data_3)
+      # # puts data_full
+      # data_full.each do |key, value|
+      #   if key == product_art then value = pur_price
+      #     return pur_price.to_f
+      #   end
+      # end
     end
   end
 
-  def get_lm_product_image(product_id)
-    product_data = get_lm_product_data_liquimoly_ru(product_id)
-    src = 'http://liquimoly.ru/' + product_data[:image_path]
-    # name = get_lm_product_data(product_id)[2]
-
-    content_type_data = File.extname(src)
-    content_type = 'image/' + content_type_data[1,3]
-    image_base64_data = Base64.encode64(open(src) { |f| f.read })
-    image = "data:#{content_type};base64,#{image_base64_data}"
-
-    {image: image, filename: "#{product_id}#{content_type_data}"}
-  # Save file in project foldet
-    # File.open(@title + '.' + File.extname(src)[1, 3], 'wb') { |f| f.write(open(src).read) }
-  # Save file to folder on the hard drive
-    # IO.copy_stream(open(src), "/home/sproodigy/Foto/Liqui_Moly_#{name}_#{get_lm_product_data(product_id)[1].first(-1)}_#{File.basename(src)}")
-    # IO.copy_stream(open(src), "/Users/extra/Documents/Авторакета/LiquiMoly/Фото Liqui Moly/#{@title.gsub(/[\/ ]/, '_') + @content_type_data}")
-  end
+  # def get_lm_product_image(product_id)
+  #   product_data = get_lm_product_data_liquimoly_ru(product_id)
+  #   src = 'https://liquimoly.ru/' + product_data[:image_path]
+  #   # name = get_lm_product_data(product_id)[2]
+  #
+  #   content_type_data = File.extname(src)
+  #   content_type = 'image/' + content_type_data[1,3]
+  #   image_base64_data = Base64.encode64(open(src, {ssl_verify_mode: OpenSSL::SSL::VERIFY_NONE}) { |f| f.read })
+  #   image = "data:#{content_type};base64,#{image_base64_data}"
+  #
+  #   {image: image, filename: "#{product_id}#{content_type_data}"}
+  # # Save file in project foldet
+  #   # File.open(@title + '.' + File.extname(src)[1, 3], 'wb') { |f| f.write(open(src).read) }
+  # # Save file to folder on the hard drive
+  #   # IO.copy_stream(open(src), "/home/sproodigy/Foto/Liqui_Moly_#{name}_#{get_lm_product_data(product_id)[1].first(-1)}_#{File.basename(src)}")
+  #   # IO.copy_stream(open(src), "/Users/extra/Documents/Авторакета/LiquiMoly/Фото Liqui Moly/#{@title.gsub(/[\/ ]/, '_') + @content_type_data}")
+  # end
 
   def barcode_from_product_art(product_art)
     if product_art.length == 5
@@ -145,7 +156,7 @@
                                         }})
   end
 
-  def create_product_extrastore(sku, old_price, price, short_desc, full_desc, title, image, filename, category_ids, store_ids, yandex_market_export, availability)
+  def create_product_extrastore(sku, old_price, price, short_desc, full_desc, title, image, filename, store_ids, yandex_market_export, availability)
     page = HTTP.headers(authorization: "Token $2a$10$h1Of14AYJkYa5kpiKJTQ7uw/r96shHcgswG/J6rcuaQJAtgFLpjYK").post("http://extrastore.org/api/v1/products/",
                        json: {product: { sku: sku,
                                          price: price,
@@ -155,7 +166,6 @@
                                          image_file_name: filename,
                                          long_description: full_desc,
                                          store_ids: store_ids,
-                                         category_ids: category_ids,
                                          availability: availability,
                                          old_price: old_price,
                                          yandex_market_export: yandex_market_export
@@ -180,12 +190,18 @@
   # @src_for_csv = []
   art_count = []
   start = Time.now
-  array_of_articles = [(25000..25070)]
-  # array_of_articles = [(369..369), (649..700), (1120..1267), (2006..2009), (4775..4775)]
+  # array_of_articles = [(25000..25010)]
+  array_of_articles = [(369..369), (649..700), (1120..1267), (2006..2009), (4775..4775)]
   # array_of_articles = [(369..700), (1007..4800), (5100..5320), (6050..6970), (7050..7950), (8000..9100), (20624..20780), (25000..25070), (39000..39010), (77160..77169)]
+  # array_of_articles = [(20624..20780), (25000..25070), (39000..39010), (77160..77169)]
   array_of_articles.each do |range|
     range.each do |product_id|   # Art from 1007 to 77169
 
+      s = SimpleSpreadsheet::Workbook.read('app/assets/prices/Price_LM_02_04_2018.xlsx')
+      s.selected_sheet = s.sheets[0]
+      s.first_row.upto(s.last_row) do |line|
+        art = s.cell(line, 4).to_i.to_s
+      end
 
       if product_id.to_s.length == 3
         product_id = "00#{product_id}"
@@ -246,9 +262,9 @@
       # end
 
 
-      image_result = get_lm_product_image(product_id)
-      image = image_result[:image]
-      filename = image_result[:filename]
+      # image_result = get_lm_product_image(product_id)
+      # image = image_result[:image]
+      # filename = image_result[:filename]
 
       full_desc = '<p><h3>Свойства</h3></p>' + "#{result[:props]}" + '<p><h3>Применение</h3></p>' + "#{result[:apps]}"   # For Extrastore
 
@@ -259,9 +275,9 @@
       purch_price = get_purchase_price(art)   # For Extrapost
       next if purch_price <= 30 unless art == "5116"
 
-      price = (purch_price * 1.356).round
+      price = (purch_price * 1.34).round
 
-      old_price = (purch_price * 1.531).round   # For Extrastore
+      old_price = (purch_price * 1.5).round   # For Extrastore
 
       country_of_origin = 'DE'  # For Extrapost
 
@@ -273,37 +289,39 @@
 
       yandex_market_export = true   # For Extrastore
 
+
       # puts result[:image_path], image, '- - - - - - -'
 
       # create_product_extrapost(purch_price, sku, barcode, store_id, price, short_desc, title, weight_num, image, filename, country_of_origin)
       # update_product_extrapost(purch_price, sku, barcode, price, image)
-      # create_product_extrastore(sku, old_price, price, short_desc, full_desc, title, image, filename, category_ids, store_ids, yandex_market_export, availability)
-      update_product_extrastore(sku, old_price, price)
+      # create_product_extrastore(sku, old_price, price, short_desc, full_desc, title, image, filename, store_ids, yandex_market_export, availability)
+      # update_product_extrastore(sku, old_price, price)
 
       # puts purch_price, sku, barcode, store_id, price, short_desc, title, weight_num, filename, country_of_origin
       # puts sku, old_price, price, short_desc, full_desc, title, filename, store_ids, yandex_market_export, '= = = = = = = ='
+
       puts "Title:   #{title}", "Barcode:   #{barcode}", "Old price:   #{old_price}", "Price:   #{price}", "Purch price:   #{purch_price}", "Art:   #{art}", '- - - - - - - - - - - - - -'
 
-      case
-      when /[^0-9]/.match(barcode)
-        puts "barcode is NAN   #{art}"
-      when barcode.length > 13
-        puts "barcode too big   #{art}"
-      when art.include?('*')
-        puts "product is not available for order   #{art}"
-      when purch_price.to_f <= 30
-        puts "purchase_price too small   #{art}"
-      when price.to_f <= 30
-        puts "price too small   #{art}"
-      when price.to_f < purch_price.to_f
-        puts "purchase_price too big   #{art}"
-      when /[^0-9.,]/.match(purch_price.to_s)
-        puts "purchase_price is NAN   #{art}"
-      when /[^0-9.,]/.match(price.to_s)
-        puts "price is NAN   #{art}"
-      when short_desc.length > 64
-        puts "sku > 32   #{art}"
-      end
+      # case
+      # when /[^0-9]/.match(barcode)
+      #   puts "barcode is NAN   #{art}"
+      # when barcode.length > 13
+      #   puts "barcode too big   #{art}"
+      # when art.include?('*')
+      #   puts "product is not available for order   #{art}"
+      # when purch_price.to_f <= 30
+      #   puts "purchase_price too small   #{art}"
+      # when price.to_f <= 30
+      #   puts "price too small   #{art}"
+      # when price.to_f < purch_price.to_f
+      #   puts "purchase_price too big   #{art}"
+      # when /[^0-9.,]/.match(purch_price.to_s)
+      #   puts "purchase_price is NAN   #{art}"
+      # when /[^0-9.,]/.match(price.to_s)
+      #   puts "price is NAN   #{art}"
+      # when short_desc.length > 64
+      #   puts "sku > 32   #{art}"
+      # end
     end
   end
 
