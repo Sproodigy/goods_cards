@@ -2,7 +2,7 @@
 
 # require 'axlsx'   # For create xlsx files
 require 'openssl'
-require 'rubyXL'
+# require 'rubyXL'
 require 'roo-xls'
 require 'simple-spreadsheet'
 # require 'simple-xls'
@@ -31,7 +31,7 @@ def get_lm_product_data_liquimoly_ru(product_id)
 
   short_desc: page.css('.fl_f_div h1').first&.content,
   image_path: (page.css('.fl_f_div a.big_img_l.loupe_target').first[:href] unless page.css('.fl_f_div a.big_img_l.loupe_target').first.nil?),
-  weight: page.css('.card_desc a').first&.content
+  weight: page.css('.card_desc a').first&.content,
   }
 end
 
@@ -57,24 +57,23 @@ def get_purchase_price(product_art)
   end
 end
 
+def get_lm_product_image(product_id)
+  product_data = get_lm_product_data_liquimoly_ru(product_id)
+  src = 'https://liquimoly.ru/' + product_data[:image_path]
+  # name = get_lm_product_data(product_id)[2]
 
-# def get_lm_product_image(product_id)
-#   product_data = get_lm_product_data_liquimoly_ru(product_id)
-#   src = 'https://liquimoly.ru/' + product_data[:image_path]
-#   # name = get_lm_product_data(product_id)[2]
-#
-#   content_type_data = File.extname(src)
-#   content_type = 'image/' + content_type_data[1,3]
-#   image_base64_data = Base64.encode64(open(src, {ssl_verify_mode: OpenSSL::SSL::VERIFY_NONE}) { |f| f.read })
-#   image = "data:#{content_type};base64,#{image_base64_data}"
-#
-#   {image: image, filename: "#{product_id}#{content_type_data}"}
-# # Save file in project foldet
-#   # File.open(@title + '.' + File.extname(src)[1, 3], 'wb') { |f| f.write(open(src).read) }
-# # Save file to folder on the hard drive
-#   # IO.copy_stream(open(src), "/home/sproodigy/Foto/Liqui_Moly_#{name}_#{get_lm_product_data(product_id)[1].first(-1)}_#{File.basename(src)}")
-#   # IO.copy_stream(open(src), "/Users/extra/Documents/Авторакета/LiquiMoly/Фото Liqui Moly/#{@title.gsub(/[\/ ]/, '_') + @content_type_data}")
-# end
+  content_type_data = File.extname(src)
+  content_type = 'image/' + content_type_data[1,3]
+  image_base64_data = Base64.encode64(open(src, {ssl_verify_mode: OpenSSL::SSL::VERIFY_NONE}) { |f| f.read })
+  image = "data:#{content_type};base64,#{image_base64_data}"
+
+  {image: image, filename: "#{product_id}#{content_type_data}"}
+# Save file in project foldet
+  # File.open(@title + '.' + File.extname(src)[1, 3], 'wb') { |f| f.write(open(src).read) }
+# Save file to folder on the hard drive
+  # IO.copy_stream(open(src), "/home/sproodigy/Foto/Liqui_Moly_#{name}_#{get_lm_product_data(product_id)[1].first(-1)}_#{File.basename(src)}")
+  # IO.copy_stream(open(src), "/Users/extra/Documents/Авторакета/LiquiMoly/Фото Liqui Moly/#{@title.gsub(/[\/ ]/, '_') + @content_type_data}")
+end
 
 def barcode_from_product_art(product_art)
   if product_art.length == 5
@@ -151,18 +150,18 @@ def create_product_extrastore(sku, old_price, price, short_desc, full_desc, titl
                                       }})
 end
 
-def update_product_extrastore(sku, old_price, price)
+def update_product_extrastore(sku, old_price, price, filename)
   page = HTTP.headers(authorization: "Token $2a$10$h1Of14AYJkYa5kpiKJTQ7uw/r96shHcgswG/J6rcuaQJAtgFLpjYK").put("http://extrastore.org/api/v1/products/#{sku}",
                      json: {product: { sku: sku,
+                                       old_price: old_price,
                                        price: price,
+                                       image_file_name: filename,
+                                       image: image,
                                       #  description: short_desc,
                                       #  title: title,
-                                      #  image: image,
-                                      #  image_file_name: filename,
                                       #  long_description: full_desc,
-                                      #  store_ids: store_ids,
-                                       old_price: old_price
-                                      #  yandex_market_export: yandex_market_export
+                                       store_ids: store_ids,
+                                       yandex_market_export: yandex_market_export
                                       }})
 end
 
@@ -227,24 +226,23 @@ array_of_articles.each do |range|
       puts "short_desc length > 64    #{art}"
     end
 
-    # if short_desc.length > 64   # For Extrastore
-    #   data = short_desc[0..63].split(' ')
-    #   data.pop
-    #   short_desc = data.join(' ').rstrip + '.'
-    # end
-    #
-    # if title.downcase.include?('marine')
-    #   category_ids = [1282, 1201]
-    # elsif title.downcase.include?('pro-')
-    #   category_ids = [1283, 1201]
-    # else
-    #   category_ids = [1201]
-    # end
+    if short_desc.length > 64   # For Extrastore
+      data = short_desc[0..63].split(' ')
+      data.pop
+      short_desc = data.join(' ').rstrip + '.'
+    end
 
+    if title.downcase.include?('marine')
+      category_ids = [1282, 1201]
+    elsif title.downcase.include?('pro-')
+      category_ids = [1283, 1201]
+    else
+      category_ids = [1201]
+    end
 
-    # image_result = get_lm_product_image(product_id)
-    # image = image_result[:image]
-    # filename = image_result[:filename]
+    image_result = get_lm_product_image(product_id)
+    image = image_result[:image]
+    filename = image_result[:filename]
 
     full_desc = '<p><h3>Свойства</h3></p>' + "#{result[:props]}" + '<p><h3>Применение</h3></p>' + "#{result[:apps]}"   # For Extrastore
 
@@ -261,9 +259,9 @@ array_of_articles.each do |range|
 
     country_of_origin = 'DE'  # For Extrapost
 
-    store_ids = [100]   # Avto-Raketa in Extrastore
+    store_ids = [100]   # AvtoRaketa in Extrastore
 
-    store_id = 3   # Avto-Raketa in Extrapost
+    store_id = 3   # AvtoRaketa in Extrapost
 
     availability = 'on_demand'   # For Extrastore
 
@@ -277,35 +275,32 @@ array_of_articles.each do |range|
     # create_product_extrastore(sku, old_price, price, short_desc, full_desc, title, image, filename, store_ids, yandex_market_export, availability)
     # update_product_extrastore(sku, old_price, price)
 
-    # puts purch_price, sku, barcode, store_id, price, short_desc, title, weight_num, filename, country_of_origin
-    # puts sku, old_price, price, short_desc, full_desc, title, filename, store_ids, yandex_market_export, '= = = = = = = ='
-
     puts "Title:         #{title}", "Barcode:       #{barcode}", "Old price:     #{old_price}",
          "Price:         #{price}", "Purch price:   #{purch_price}", "Art:           #{art}",
          "Short_desc:    #{short_desc}", "Full_desc:     #{full_desc}", '- - - - - - - - - - - - - -'
 
     # puts "Title:   #{title}", "Barcode:   #{barcode}", "Old price:   #{old_price}", "Price:   #{price}", "Purch price:   #{purch_price}", "Art:   #{art}", '- - - - - - - - - - - - - -'
 
-    # case
-    # when /[^0-9]/.match(barcode)
-    #   puts "barcode is NAN   #{art}"
-    # when barcode.length > 13
-    #   puts "barcode too big   #{art}"
-    # when art.include?('*')
-    #   puts "product is not available for order   #{art}"
-    # when purch_price.to_f <= 30
-    #   puts "purchase_price too small   #{art}"
-    # when price.to_f <= 30
-    #   puts "price too small   #{art}"
-    # when price.to_f < purch_price.to_f
-    #   puts "purchase_price too big   #{art}"
-    # when /[^0-9.,]/.match(purch_price.to_s)
-    #   puts "purchase_price is NAN   #{art}"
-    # when /[^0-9.,]/.match(price.to_s)
-    #   puts "price is NAN   #{art}"
-    # when short_desc.length > 64
-    #   puts "sku > 32   #{art}"
-    # end
+    case
+    when /[^0-9]/.match(barcode)
+      puts "barcode is NAN   #{art}"
+    when barcode.length > 13
+      puts "barcode too big   #{art}"
+    when art.include?('*')
+      puts "product is not available for order   #{art}"
+    when purch_price.to_f <= 30
+      puts "purchase_price too small   #{art}"
+    when price.to_f <= 30
+      puts "price too small   #{art}"
+    when price.to_f < purch_price.to_f
+      puts "purchase_price too big   #{art}"
+    when /[^0-9.,]/.match(purch_price.to_s)
+      puts "purchase_price is NAN   #{art}"
+    when /[^0-9.,]/.match(price.to_s)
+      puts "price is NAN   #{art}"
+    when short_desc.length > 64
+      puts "sku > 32   #{art}"
+    end
   end
 end
 
@@ -325,7 +320,7 @@ else
   puts full_time.round.to_s + ' sec'
 end
 
-puts "Full time:   #{full_time}"
+puts "Full time:   #{full_time} sec"
 
 # # To add a header, the columns should be written monotonously with the header (each data column separately)
 #
