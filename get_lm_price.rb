@@ -3,7 +3,7 @@
   # require 'axlsx'   # For create xlsx files
 <<<<<<< HEAD
   require 'openssl'
-  require 'rubyXL'
+  # require 'rubyXL'
 =======
   # require 'rubyXL'
 >>>>>>> af274cc0b3937b76952fe376ea02aa056de5c9b2

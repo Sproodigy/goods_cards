@@ -2,11 +2,8 @@
 
 # require 'axlsx'   # For create xlsx files
 require 'openssl'
-require 'rubyXL'
 require 'roo-xls'
 require 'simple-spreadsheet'
-# require 'simple-xls'
-# require 'httparty'
 # require 'csv'
 # require 'uri'
 # require 'net/http'
@@ -23,62 +20,37 @@ def get_lm_product_data_liquimoly_ru(product_id)
   page = Nokogiri::HTML(HTTP.follow.get("http://liquimoly.ru/item/#{product_id}.html", :ssl_context => ctx).to_s)
 
   {
-  sku: page.css('.card_desc strong').first&.content,
+    sku: page.css('.card_desc strong').first&.content,
 
-# Full description
-  props: page.css('#tabs-1 p').first,
-  apps: page.css('#tabs-2 p').last,
+  # Full description
+    props: page.css('#tabs-1 p').first,
+    apps: page.css('#tabs-2 p').last,
 
-  short_desc: page.css('.fl_f_div h1').first&.content,
-  image_path: (page.css('.fl_f_div a.big_img_l.loupe_target').first[:href] unless page.css('.fl_f_div a.big_img_l.loupe_target').first.nil?),
-  weight: page.css('.card_desc a').first&.content
+    short_desc: page.css('.fl_f_div h1').first&.content,
+    image_path: (page.css('.fl_f_div a.big_img_l.loupe_target').first[:href] unless page.css('.fl_f_div a.big_img_l.loupe_target').first.nil?),
+    weight: page.css('.card_desc a').first&.content
   }
 end
 
 def get_arts_array
-  articles = []
+  articles = {}
   s = SimpleSpreadsheet::Workbook.read('app/assets/prices/Price_LM_02_04_2018.xlsx')
   s.selected_sheet = s.sheets[0]
   s.first_row.upto(s.last_row) do |line|
     art = s.cell(line, 4).to_s
-    purch_price = s.cell(line, 8).to_f
+    purch_price = s.cell(line, 8).to_s
     next if art == ''
     next if art.match(/[A-Za-zА-Яа-я]/)
 
     if art.include?('/')
       art = art.split('/')[1]
-      articles.push(art)
+      articles[art] = purch_price
     else
-      articles.push(art)
+      articles[art] = purch_price
     end
 
   end
   return articles
-end
-
-def get_purchase_price(product_art)
-# Also supports csv, csvt and tsv formats
-  s = SimpleSpreadsheet::Workbook.read('app/assets/prices/Price_LM_02_04_2018.xlsx')
-  s.selected_sheet = s.sheets[0]
-  s.first_row.upto(s.last_row) do |line|
-    art = s.cell(line, 4).to_s
-    purch_price = s.cell(line, 8).to_f
-    next if art == ''
-    next if art.match(/[A-Za-zА-Яа-я]/)
-
-    if art.include?('*')
-      art = art.split('*')[0]
-    end
-
-    if art.include?('/')
-      art = art.split('/')[1]
-    end
-
-    if product_art == art
-      return purch_price
-    end
-
-  end
 end
 
 def get_lm_product_image(product_id)
@@ -191,39 +163,19 @@ end
 
 # @src_for_csv = []
 start = Time.now
-# array_of_articles = [(25000..25010)]
-# array_of_articles = [(369..369), (649..700), (1120..1267), (2006..2009), (4775..4775)]
-# array_of_articles = [(1007..4800), (5100..5320), (6050..6970), (7050..7950), (8000..9100), (20624..20780), (25000..25070), (39000..39010), (77160..77169)]
-# array_of_articles = [(20624..20780), (25000..25070), (39000..39010), (77160..77169)]
-# array_of_articles = [(2377..2377), (1007..1007)]
-# array_of_articles.each do |range|
-#   range.each do |product_id|   # Art from 1007 to 77169
-puts get_arts_array
-get_arts_array.each do |product_id|
-    # s = SimpleSpreadsheet::Workbook.read('app/assets/prices/Price_LM_02_04_2018.xlsx')
-    # s.selected_sheet = s.sheets[0]
-    # s.first_row.upto(s.last_row) do |line|
-    #   art = s.cell(line, 4).to_i.to_s
-    # end
+
+get_arts_array.each do |product_id, purch_price|
 
     if product_id.include?('*')
+      category_ids = [1338, 1201]
       product_id = product_id.split('*')[0]
-      category_ids = [1338]
+    else
+      category_ids = [1201]
     end
+
     result = get_lm_product_data_liquimoly_ru(product_id)
-    # art = result[:sku].rpartition(' ').last
-    # next if result[:sku].nil?
+    next if result[:sku].nil?
 
-    # if product_id.to_s.length == 3
-    #   product_id = "00#{product_id}"
-    # # Включать отдельно для этой категории товаров.
-    # # elsif product_id == 1120 || 1164 || 1267 || 2006 || 2007 || 2009 || 4775
-    # #   product_id = "0#{product_id}"
-    # end
-
-    # result = get_lm_product_data_liquimoly_ru(product_id)
-    # next if result[:sku].nil?
-    # art = result[:sku].rpartition(' ').last
     if result[:weight].include?('шт')
       weight = ' (' + 0.1.to_s + ' кг)'
       weight_num = 0.1
@@ -236,23 +188,18 @@ get_arts_array.each do |product_id|
     if /[0-9]-[A-Z]/.match(result[:short_desc])
       data = result[:short_desc].partition(/[0-9]-[A-Z]/)
       short_desc = data[0].to_s.lstrip.rstrip.squeeze(" ") + '.'
-      title ='Liqui Moly ' + data[1..data.length].join.squeeze(" ") + weight + " (art: #{art})"
+      title ='Liqui Moly ' + data[1..data.length].join.squeeze(" ") + ' — ' + data[0].to_s.lstrip.rstrip.squeeze(" ") + weight + " (art: #{product_id})"
 
       if /[A-Z]/.match(short_desc)
         data_array = short_desc.split
         data_title = data_array.pop
         short_desc = data_array.join(' ') + '.'
-        title ='Liqui Moly ' + data_title.gsub(/[.]/, ' ').rstrip + data[1..data.length].join.squeeze(" ") + weight + " (art: #{art})"
+        title ='Liqui Moly ' + data_title.gsub(/[.]/, ' ').rstrip + data[1..data.length].join.squeeze(" ") + ' — ' + data_array.join(' ') + weight + " (art: #{product_id})"
       end
     else
       data = result[:short_desc].partition(/[A-Z]/)
       short_desc = data[0].to_s.rstrip.lstrip.squeeze(" ") + '.'
-      title = 'Liqui Moly ' + data[1..data.length].join.squeeze(" ") + weight + " (art: #{product_id})"
-    end
-
-    case
-    when short_desc.length > 64
-      puts "short_desc length > 64    #{art}"
+      title = 'Liqui Moly ' + data[1..data.length].join.squeeze(" ") + ' — ' + data[0].to_s.rstrip.lstrip.squeeze(" ") + weight + " (art: #{product_id})"
     end
 
     if short_desc.length > 64   # For Extrastore
@@ -265,8 +212,6 @@ get_arts_array.each do |product_id|
       category_ids = [1282, 1201]
     elsif title.downcase.include?('pro-')
       category_ids = [1283, 1201]
-    else
-      category_ids = [1201]
     end
 
     image_result = get_lm_product_image(product_id)
@@ -278,8 +223,9 @@ get_arts_array.each do |product_id|
     barcode = barcode_from_product_art(product_id)
 
     sku = barcode
-
-    purch_price = get_purchase_price(product_id)   # For Extrapost
+    if product_id
+      purch_price = purch_price.to_f   # For Extrapost
+    end
     next if purch_price <= 30 unless product_id == "5116"
 
     price = (purch_price * 1.34).round
@@ -304,37 +250,33 @@ get_arts_array.each do |product_id|
     # create_product_extrastore(sku, old_price, price, short_desc, full_desc, title, image, filename, store_ids, yandex_market_export, availability)
     # update_product_extrastore(sku, price, image, filename, full_desc, store_ids, old_price)
 
-    # puts purch_price, sku, barcode, store_id, price, short_desc, title, weight_num, filename, country_of_origin
-    # puts sku, old_price, price, short_desc, full_desc, title, filename, store_ids, yandex_market_export, '= = = = = = = ='
-
     puts "Weight:       #{weight}", "Title:         #{title}", "Barcode:       #{barcode}", "Old price:     #{old_price} руб.",
          "Price:         #{price} руб.", "Purch price:   #{purch_price} руб.", "Art:           #{product_id}",
-         "Short_desc:    #{short_desc}", "Full_desc:     #{full_desc}", '- - - - - - - - - - - - - -'
-
-    # puts "Title:   #{title}", "Barcode:   #{barcode}", "Old price:   #{old_price}", "Price:   #{price}", "Purch price:   #{purch_price}", "Art:   #{art}", '- - - - - - - - - - - - - -'
+         "Short_desc:    #{short_desc}", "Full_desc:     #{full_desc}", "Cat_ids:   #{category_ids}", '- - - - - - - - - - - - - -'
 
     case
-    when /[^0-9]/.match(barcode)
-      puts "barcode is NAN   #{product_id}"
-    when barcode.length > 13
-      puts "barcode too big   #{product_id}"
-    when purch_price.to_f <= 30
-      puts "purchase_price too small   #{art}"
-    when price.to_f <= 30
-      puts "price too small   #{art}"
-    when price.to_f < purch_price.to_f
-      puts "purchase_price too big   #{art}"
-    when /[^0-9.,]/.match(purch_price.to_s)
-      puts "purchase_price is NAN   #{art}"
-    when /[^0-9.,]/.match(price.to_s)
-      puts "price is NAN   #{art}"
-    when short_desc.length > 64
-      puts "sku > 32   #{art}"
+      when short_desc.length > 64
+        puts "short_desc length > 64    #{product_id}"
+      when /[^0-9]/.match(barcode)
+        puts "barcode is NAN   #{product_id}"
+      when barcode.length > 13
+        puts "barcode too big   #{product_id}"
+      when purch_price.to_f <= 30
+        puts "purchase_price too small   #{product_id}"
+      when price.to_f <= 30
+        puts "price too small   #{product_id}"
+      when price.to_f < purch_price.to_f
+        puts "purchase_price too big   #{product_id}"
+      when /[^0-9.,]/.match(purch_price.to_s)
+        puts "purchase_price is NAN   #{product_id}"
+      when /[^0-9.,]/.match(price.to_s)
+        puts "price is NAN   #{product_id}"
+      when short_desc.length > 64
+        puts "sku > 32   #{product_id}"
     end
   end
-# end
 
-puts 'Number of goods:   ' + get_arts_array.length
+puts 'Number of goods:   ' + get_arts_array.length.to_s
 finish = Time.now
 full_time = (finish - start)
 if full_time >= 3600
@@ -344,7 +286,7 @@ if full_time >= 3600
   puts "#{hours} hours   #{min} min   #{sec} sec"
 elsif full_time >= 60
   min = (full_time / 60).floor
-  sec = (full_time - min * 60)
+  sec = (full_time - min * 60).floor
   puts "#{min} min   #{sec} sec"
 else
   puts full_time.round.to_s + ' sec'
