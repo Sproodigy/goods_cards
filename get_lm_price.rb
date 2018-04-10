@@ -221,8 +221,8 @@ get_arts_and_pur_price_hash.each do |product_id, purch_price|
   # # # # #
 
   # For Extrastore
-    price = (purch_price * 1.34).round
-    old_price = (purch_price * 1.5).round
+    price = (purch_price * 1.33).round
+    old_price = (purch_price * 1.48).round
     country_of_origin = 'DE'
     store_ids = [100]   # AvtoRaketa in Extrastore
     availability = 'on_demand'
