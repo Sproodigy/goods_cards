@@ -32,13 +32,14 @@ def get_lm_product_data_liquimoly_ru(product_id)
   }
 end
 
-def get_arts_and_pur_price_hash
+def get_arts_and_pur_price
   articles = {}
-  s = SimpleSpreadsheet::Workbook.read('app/assets/prices/Price_LM_02_04_2018.xlsx')
+  s = SimpleSpreadsheet::Workbook.read('app/assets/prices/Price_LM_12_04_2018.xlsx')
   s.selected_sheet = s.sheets[0]
   s.first_row.upto(s.last_row) do |line|
     art = s.cell(line, 4).to_s
-    purch_price = s.cell(line, 8).to_s
+    price_data = s.cell(line, 7).to_f
+    purch_price = price_data - (price_data / 10)
     next if art == ''
     next if art.match(/[A-Za-zА-Яа-я]/)
 
@@ -114,17 +115,17 @@ end
                                        }})
  end
 
- def update_product_extrapost(purch_price, sku, barcode, price, image)
+ def update_product_extrapost(purch_price, sku, barcode, price)
    response = HTTP.headers(authorization: "Token e541dfef128f4f93cbdb09b320ea3fb7").put("https://xp.extrapost.ru/api/v1/products/#{barcode}",
                        json: {product: {purchase_price: purch_price,
                                         sku: sku,
                                         barcode: barcode,
                                        #  store_id: store_id,
-                                        price: price,
+                                        price: price
                                        #  description: short_desc,
                                        #  title: title,
                                        #  weight: weight_num,
-                                        image: image
+                                        # image: image
                                        #  image_file_name: filename,
                                        #  country_of_origin: country_of_origin
                                        }})
@@ -146,15 +147,15 @@ end
                                        }})
  end
 
- def update_product_extrastore(sku, price, image, filename, full_desc, store_ids, old_price)
+ def update_product_extrastore(sku, price, store_ids, old_price)
    page = HTTP.headers(authorization: "Token $2a$10$h1Of14AYJkYa5kpiKJTQ7uw/r96shHcgswG/J6rcuaQJAtgFLpjYK").put("http://extrastore.org/api/v1/products/#{sku}",
                       json: {product: { sku: sku,
                                         price: price,
                                         # description: short_desc,
                                         # title: title
-                                        image: image,
-                                        image_file_name: filename,
-                                        long_description: full_desc,
+                                        # image: image,
+                                        # image_file_name: filename,
+                                        # long_description: full_desc,
                                         store_ids: store_ids,
                                         old_price: old_price
                                         # yandex_market_export: yandex_market_export
@@ -164,7 +165,7 @@ end
 # @src_for_csv = []
 start = Time.now
 
-get_arts_and_pur_price_hash.each do |product_id, purch_price|
+get_arts_and_pur_price.each do |product_id, purch_price|
 
     if product_id.include?('*')
       category_ids = [1338, 1201]
@@ -221,8 +222,8 @@ get_arts_and_pur_price_hash.each do |product_id, purch_price|
   # # # # #
 
   # For Extrastore
-    price = (purch_price * 1.33).round
-    old_price = (purch_price * 1.48).round
+    price = (purch_price * 1.34).round
+    old_price = (purch_price * 1.49).round
     country_of_origin = 'DE'
     store_ids = [100]   # AvtoRaketa in Extrastore
     availability = 'on_demand'
@@ -244,9 +245,9 @@ get_arts_and_pur_price_hash.each do |product_id, purch_price|
     # puts result[:image_path], image, '- - - - - - -'
 
     # create_product_extrapost(purch_price, sku, barcode, store_id, price, short_desc, title, weight_num, image, filename, country_of_origin)
-    # update_product_extrapost(purch_price, sku, barcode, price, image)
+    # update_product_extrapost(purch_price, sku, barcode, price)
     # create_product_extrastore(sku, old_price, price, short_desc, full_desc, title, image, filename, store_ids, yandex_market_export, availability)
-    # update_product_extrastore(sku, price, image, filename, full_desc, store_ids, old_price)
+    # update_product_extrastore(sku, price, store_ids, old_price)
 
     puts "Weight:       #{weight}", "Title:         #{title}", "Barcode:       #{barcode}", "Old price:     #{old_price} руб.",
          "Price:         #{price} руб.", "Purch price:   #{purch_price} руб.", "Art:           #{product_id}",
@@ -274,7 +275,7 @@ get_arts_and_pur_price_hash.each do |product_id, purch_price|
     end
   end
 
-puts 'Number of goods:   ' + get_arts_and_pur_price_hash.length.to_s
+puts 'Number of goods:   ' + get_arts_and_pur_price.length.to_s
 finish = Time.now
 full_time = (finish - start)
 if full_time >= 3600
@@ -289,8 +290,6 @@ elsif full_time >= 60
 else
   puts full_time.round.to_s + ' sec'
 end
-
-puts "Full time:   #{full_time}"
 
 # # To add a header, the columns should be written monotonously with the header (each data column separately)
 #
