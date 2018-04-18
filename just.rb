@@ -14,6 +14,6 @@ else
   puts full_time.round.to_s + ' sec'
 end
 end
-# 
+#
 # puts full_time.to_f / 60
 # puts (full_time - min * 60)
