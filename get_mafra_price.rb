@@ -23,27 +23,39 @@ def get_mafra_product_data(product_id)
     title: page.css('.headline strong').first&.content,
     desc: page.css('.two-thirds h1').last.to_s + "\n" + page.css('.two-thirds p')[1].to_s + "\n" +
           page.css('.two-thirds h3').first.to_s + "\n" + page.css('.two-thirds p')[2].to_s,
+    sku: page.css('.two-thirds strong')[1..-1].to_a,
 
-    sku: page.css('.two-thirds strong')[1..-1].to_a
-  #   sku: page.css('.card_desc strong').first&.content,
-  #
-  # # Full description
-  #   props: page.css('#tabs-1 p').first,
-  #   apps: page.css('#tabs-2 p').last,
-
-    # short_desc: page.css('.fl_f_div h1').first&.content,
-    # image_path: (page.css('.fl_f_div a.big_img_l.loupe_target').first[:href] unless page.css('.fl_f_div a.big_img_l.loupe_target').first.nil?),
-    # weight: page.css('.card_desc a').first&.content
+    weight1: ((page.css('.half-page p').to_s.split('Упаковка')[-1].split('<')[0].lstrip) unless (page.css('.half-page').first&.content.nil?)),
+    weight2: (page.css('.one-third').to_s unless
+              page.css('.one-third').first&.content.nil?)
   }
 end
-(3230..3235).each do |page|
+
+# def get_weight(product_id)
+#   weight_data = get_mafra_product_data(product_id)
+#   weight = weight_data[:weight2]
+# end
+
+(3736..3736).each do |page|
   res = get_mafra_product_data(page)
+
   res[:sku].each do |article|
-    # next if art.nil?
-    art = article.to_s.split('>')[1].split('<')[0]
-    title = res[:title]
+      next if article.nil?
+      art = article.to_s.split('>')[1].split('<')[0]
+      title = res[:title]
 
-    puts art, title, '= = = = ='
+      # puts res[:weight1], '- - - - - - -'
+      # puts res[:weight2]
+
+      if res[:weight1].nil?
+        weight = res[:weight2].split('Упаковка')[0]
+        # weight = weight[0]
+      else
+        weight = res[:weight1].split('<br>').shift
+      end
+
+      # weight = get_weight(art)
+
+      puts art, title, weight, '= = = = ='
+    end
   end
-
-end
