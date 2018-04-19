@@ -12,6 +12,8 @@ gem 'barby'
 gem 'semacode-ruby19'
 gem 'pdf-reader'
 gem 'platform-api'
+gem 'simple-spreadsheet'
+gem 'http'
 # gem 'csv'
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
