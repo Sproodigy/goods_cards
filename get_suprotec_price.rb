@@ -8,13 +8,13 @@ require 'nokogiri'
 require 'base64'
 require 'json'
 
-def update_product_extrapost(price, purch_price, sku, barcode, weight_num)
+def update_product_extrapost(price, purch_price, sku, barcode)
   response = HTTP.headers(authorization: "Token e541dfef128f4f93cbdb09b320ea3fb7").put("https://xp.extrapost.ru/api/v1/products/#{barcode}",
                       json: {product: {price: price,
                                        purchase_price: purch_price,
                                        sku: sku,
-                                       barcode: barcode,
-                                       weight: weight_num
+                                       barcode: barcode
+                                       # weight: weight_num
                                       }})
 end
 
@@ -28,10 +28,10 @@ end
 
 
   # s = SimpleSpreadsheet::Workbook.read("app/assets/prices/Price_Suprotec_20.xlsx")
-  s = SimpleSpreadsheet::Workbook.read("app/assets/prices/Price_Suprotec_10.xlsx")
+  s = SimpleSpreadsheet::Workbook.read("app/assets/prices/Price_Suprotec_10_15_20_perc.xlsx")
   s.selected_sheet = s.sheets[0].to_s
   s.first_row.upto(s.last_row) do |line|
-    barcode = s.cell(line, 6).to_s.to_i
+    barcode = s.cell(line, 8).to_s.to_i
 
     if barcode
 
@@ -39,17 +39,19 @@ end
       title = s.cell(line, 1)
       purch_price = s.cell(line, 3)
       old_price = s.cell(line, 4)
-      price = s.cell(line, 5)
+      price = s.cell(line, 6)
       weight = s.cell(line, 2)
 
       if weight.nil?
         next
+      elsif weight.match(/[\d]{1} [л]/)
+        weight_num = (weight.split(' ').first.to_f)
       else
         weight_num = (weight.split(' ').first.to_f) / 1000
       end
 
     end
-    # puts "Title:   #{title}   Price:   #{price},   Purch_price:   #{purch_price},   SKU:   #{sku},   Barcode:   #{barcode},   Weight_num:   #{weight_num}"
+    # puts "Title:   #{title}   Price:   #{price},   Purch_price:   #{purch_price},   SKU:   #{sku},   Barcode:   #{barcode},   Weight_num:   #{weight_num}", '==========================='
     update_product_extrastore(sku, price, old_price)
-    update_product_extrapost(price, purch_price, sku, barcode, weight_num)
+    update_product_extrapost(price, purch_price, sku, barcode)
   end
