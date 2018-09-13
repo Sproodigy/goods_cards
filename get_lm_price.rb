@@ -34,7 +34,7 @@ end
 
 def get_arts_and_pur_price
   articles = {}
-  s = SimpleSpreadsheet::Workbook.read('app/assets/prices/Price_LM_12_04_2018.xlsx')
+  s = SimpleSpreadsheet::Workbook.read('app/assets/prices/price_lm_12.09.2018.xlsx')
   s.selected_sheet = s.sheets[0]
   s.first_row.upto(s.last_row) do |line|
     art = s.cell(line, 4).to_s
@@ -77,6 +77,9 @@ def barcode_from_product_art(product_art)
 
     if product_art.start_with?('25')
       s = "4100420#{product_art}"
+      "#{s}#{checkdigit(s)}"
+    elsif product_art.start_with?('24')
+      s = "4017777#{product_art}"
       "#{s}#{checkdigit(s)}"
     elsif product_art.start_with?('0')
       s = "4606746#{product_art}"
