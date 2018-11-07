@@ -3,7 +3,7 @@
   require 'simple-spreadsheet'
   require 'http'
   require 'open-uri'
-  require 'nokogiri'
+  # require 'nokogiri'
   require 'base64'
   require 'json'
   require 'active_support/core_ext/string/access'
@@ -106,10 +106,10 @@
         end
 
         if sku.length > 2
-          # puts "Weight:   #{weight_num}", "Title:   #{title}", "Barcode:   #{barcode}", "Price:   #{price}", "Purch price_discount:   #{purch_price_discount}", "Old price:   #{old_price}", '- - - - - - - - - - - - - -'
+          puts "Weight:   #{weight_num}", "Title:   #{title}", "Barcode:   #{barcode}", "Price:   #{price}", "Purch price_discount:   #{purch_price_discount}", "Old price:   #{old_price}", '- - - - - - - - - - - - - -'
           # create_product_extrastore(old_price, price, title, store_ids, yandex_market_export, availability, category_ids)
           # update_product_extrastore(sku, price, title)
-          update_product_extrapost(purch_price_discount, barcode, price)
+          # update_product_extrapost(purch_price_discount, barcode, price)
           # update_product_extrapost(purch_price_discount, sku, barcode, price, title, weight_num)
         end
       end
